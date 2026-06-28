@@ -17,10 +17,13 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.*" />
     <PackageReference Include="System.Management" Version="8.*" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="8.*" />
     <PackageReference Include="WPF-UI" Version="3.*" />
     <PackageReference Include="Serilog" Version="4.*" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.*" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="8.*" />
   </ItemGroup>
 
 </Project>

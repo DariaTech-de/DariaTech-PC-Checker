@@ -12,6 +12,24 @@ einen HTML-Bericht zum Aushändigen.
 
 .NET 8 · WPF + WPF-UI (Fluent) · CommunityToolkit.Mvvm · System.Management (WMI) · Serilog
 
+## Umsetzungsstand
+
+Bereits umgesetzt:
+
+- **Gerüst:** WPF-App mit DI/Hosting, Serilog-Logging (Datei) und Fluent-Theme.
+- **Diagnose:** alle Prüfungen aus `PC-Schnellcheck.ps1` nativ in C# unter
+  `Checks/` (System, CPU/RAM, Speicherplatz, SMART, Akku, Defender, Updates,
+  Autostart, Treiber, Netzwerk, Ereignisprotokoll). Die langsame Update-Suche
+  ist per „Schnellmodus" überspringbar.
+- **Dashboard:** Ampel-Kacheln je Bereich, Gesamtampel + Zähler, Detailpanel.
+- **Reparaturen:** `RepairService` mit automatischem Wiederherstellungspunkt,
+  Bestätigung und Live-Log; Fixes: Temp leeren, SFC/DISM, DNS-Cache leeren,
+  Defender-Schnellscan. Nach einem Fix wird der Bereich neu geprüft.
+- **HTML-Bericht:** `ReportExporter` im Stil des PowerShell-Berichts.
+- **Tests:** xUnit für Severity-Regeln, Engine-Robustheit und Bericht.
+
+> Hinweis: WPF/`net8.0-windows` lässt sich nur unter **Windows** bauen.
+
 ## Entwicklung
 
 ```bash
