@@ -216,10 +216,12 @@ public sealed partial class MainViewModel : ObservableObject
     {
         IEnumerable<Type> wanted = area switch
         {
-            "Datenträger – Speicherplatz" => new[] { typeof(ClearTempFilesFix) },
+            "Datenträger – Speicherplatz" => new[] { typeof(ClearTempFilesFix), typeof(CheckDiskFix) },
+            "Datenträger – Gesundheit (SMART)" => new[] { typeof(CheckDiskFix) },
             "System & Betriebssystem" => new[] { typeof(SystemFileRepairFix), typeof(ClearTempFilesFix) },
-            "Netzwerk" => new[] { typeof(FlushDnsFix) },
+            "Netzwerk" => new[] { typeof(FlushDnsFix), typeof(WinsockResetFix) },
             "Windows-Sicherheit" => new[] { typeof(DefenderQuickScanFix) },
+            "Windows-Updates" => new[] { typeof(WindowsUpdateRepairFix) },
             _ => Array.Empty<Type>()
         };
         return _allFixes.Where(f => wanted.Contains(f.GetType())).ToList();

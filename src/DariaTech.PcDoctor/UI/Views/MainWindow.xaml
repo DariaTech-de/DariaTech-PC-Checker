@@ -167,17 +167,30 @@
                         <ItemsControl ItemsSource="{Binding Results}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="150" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Label}" Foreground="Gray"
-                                                   TextWrapping="Wrap" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Value}"
-                                                   TextWrapping="Wrap"
-                                                   Foreground="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
-                                    </Grid>
+                                    <StackPanel Margin="0,4">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="150" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Label}" Foreground="Gray"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Value}"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding Fixes}" Margin="0,4,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <ui:Button Content="{Binding Title}"
+                                                               Padding="8,4" FontSize="12"
+                                                               HorizontalAlignment="Left"
+                                                               Command="{Binding DataContext.RunFixCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                                               CommandParameter="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

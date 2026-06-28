@@ -1,11 +1,13 @@
 using System.Management;
 using DariaTech.PcDoctor.Core;
+using DariaTech.PcDoctor.Fixes;
 
 namespace DariaTech.PcDoctor.Checks;
 
 /// <summary>
 /// Autostart-Programme (<c>Win32_StartupCommand</c>): Anzahl + erste Einträge.
 /// Mehr als 15 Einträge → Hinweis (Warnung), da viele den Start bremsen.
+/// Jeder gelistete Eintrag erhält eine reversible „Deaktivieren"-Aktion.
 /// </summary>
 public sealed class StartupCheck : ICheck
 {
@@ -15,15 +17,15 @@ public sealed class StartupCheck : ICheck
         => Task.Run<IReadOnlyList<CheckResult>>(() =>
         {
             var results = new List<CheckResult>();
-            var entries = new List<(string Name, string Location)>();
+            var entries = new List<(string Name, string Location, string Command)>();
 
             using (var searcher = new ManagementObjectSearcher(
-                "SELECT Name, Location FROM Win32_StartupCommand"))
+                "SELECT Name, Location, Command FROM Win32_StartupCommand"))
             {
                 foreach (ManagementBaseObject obj in searcher.Get())
                 {
                     ct.ThrowIfCancellationRequested();
-                    entries.Add(($"{obj["Name"]}", $"{obj["Location"]}"));
+                    entries.Add(($"{obj["Name"]}", $"{obj["Location"]}", $"{obj["Command"]}"));
                 }
             }
 
@@ -33,8 +35,12 @@ public sealed class StartupCheck : ICheck
                 count > 15 ? Severity.Warning : Severity.Info,
                 count > 15 ? $"{count} Autostart-Einträge – viele davon bremsen den Start." : null));
 
-            foreach (var (name, location) in entries.Take(8))
-                results.Add(new CheckResult(Area, $" – {name}", location, Severity.Info));
+            foreach (var (name, location, command) in entries.Take(8))
+            {
+                var fix = new DisableStartupItemFix(name, location, command);
+                results.Add(new CheckResult(Area, $" – {name}", location, Severity.Info,
+                    Detail: command, Fixes: new IFixAction[] { fix }));
+            }
 
             return results;
         }, ct);

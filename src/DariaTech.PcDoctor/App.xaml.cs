@@ -70,11 +70,14 @@ public partial class App : Application
         services.AddSingleton<ICheck, NetworkCheck>();
         services.AddSingleton<ICheck, EventLogCheck>();
 
-        // Fixes
+        // Fixes (bereichsbezogen; DisableStartupItemFix wird je Eintrag vom Check erzeugt)
         services.AddSingleton<IFixAction, ClearTempFilesFix>();
         services.AddSingleton<IFixAction, SystemFileRepairFix>();
         services.AddSingleton<IFixAction, FlushDnsFix>();
         services.AddSingleton<IFixAction, DefenderQuickScanFix>();
+        services.AddSingleton<IFixAction, WindowsUpdateRepairFix>();
+        services.AddSingleton<IFixAction, CheckDiskFix>();
+        services.AddSingleton<IFixAction, WinsockResetFix>();
 
         // Core-Dienste
         services.AddSingleton<DiagnosticEngine>();

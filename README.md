@@ -23,9 +23,13 @@ Bereits umgesetzt:
   ist per „Schnellmodus" überspringbar.
 - **Dashboard:** Ampel-Kacheln je Bereich, Gesamtampel + Zähler, Detailpanel.
 - **Reparaturen:** `RepairService` mit automatischem Wiederherstellungspunkt,
-  Bestätigung und Live-Log; Fixes: Temp leeren, SFC/DISM, DNS-Cache leeren,
-  Defender-Schnellscan. Nach einem Fix wird der Bereich neu geprüft.
+  Bestätigung und Live-Log. Fixes: Temp leeren, SFC/DISM, Windows-Update
+  reparieren, Datenträger prüfen (chkdsk, schreibgeschützt), DNS-Cache leeren,
+  Winsock-Reset, Defender-Schnellscan und reversibles Deaktivieren einzelner
+  Autostart-Einträge. Nach einem Fix wird der Bereich neu geprüft.
 - **HTML-Bericht:** `ReportExporter` im Stil des PowerShell-Berichts.
+- **Packaging:** UAC-Manifest, Versions-/Herstellerinfo und Build-Skripte
+  (`build/publish.ps1`, `build/sign.ps1`) für die portable Single-File-`.exe`.
 - **Tests:** xUnit für Severity-Regeln, Engine-Robustheit und Bericht.
 
 > Hinweis: WPF/`net8.0-windows` lässt sich nur unter **Windows** bauen.
@@ -41,6 +45,14 @@ dotnet test
 
 ## Release-Build (portable Single-File-.exe)
 
+Am einfachsten über das Skript (legt die `.exe` unter `artifacts\` ab):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build\publish.ps1
+```
+
+Oder direkt:
+
 ```bash
 dotnet publish src/DariaTech.PcDoctor -c Release -r win-x64 --self-contained true ^
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
@@ -51,10 +63,17 @@ beim Kunden. WPF erlaubt kein vollständiges Trimming — daher self-contained.
 
 ## Code-Signing (gegen SmartScreen-Warnung)
 
+```powershell
+$env:DARIATECH_PFX_PASSWORD = "<PASSWORT>"
+powershell -ExecutionPolicy Bypass -File build\sign.ps1 -Pfx C:\zert\DariaTech-CodeSigning.pfx
+```
+
+Intern ruft das Skript `signtool` auf:
+
 ```bash
 signtool sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 ^
   /f "DariaTech-CodeSigning.pfx" /p <PASSWORT> ^
-  "bin\Release\net8.0-windows\win-x64\publish\DariaTech.PcDoctor.exe"
+  "artifacts\DariaTech.PcDoctor.exe"
 ```
 
 Zertifikat und Passwort nicht ins Repo committen (siehe `.gitignore`).
