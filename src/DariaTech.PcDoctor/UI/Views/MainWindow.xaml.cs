@@ -19,7 +19,8 @@ public partial class MainWindow : FluentWindow
     {
         if (!ReferenceEquals(e.OriginalSource, MainTabs)) return;
         if (DataContext is MainViewModel vm
-            && MainTabs.SelectedItem is System.Windows.Controls.TabItem { Header: "Gaming & Stresstest" })
+            && MainTabs.SelectedItem is System.Windows.Controls.TabItem tab
+            && tab.Header as string == "Gaming & Stresstest")
         {
             _ = vm.Gaming.EnsureMonitoringAsync();
         }

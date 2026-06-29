@@ -51,8 +51,9 @@ public sealed class WindowsUpdateCheck : ICheck
                     try
                     {
                         dynamic update = result.Updates[i];
-                        string title = Convert.ToString(update.Title) ?? "Unbenanntes Update";
-                        titles.Add(title);
+                        object? titleObj = update.Title;
+                        var title = titleObj?.ToString();
+                        titles.Add(string.IsNullOrWhiteSpace(title) ? "Unbenanntes Update" : title!);
                     }
                     catch { /* einzelnes Update überspringen */ }
                 }
