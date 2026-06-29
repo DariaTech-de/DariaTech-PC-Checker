@@ -269,6 +269,7 @@ public sealed partial class MainViewModel : ObservableObject
             "Netzwerk" => new[] { typeof(FlushDnsFix), typeof(WinsockResetFix) },
             "Windows-Sicherheit" => new[] { typeof(DefenderQuickScanFix) },
             "Windows-Updates" => new[] { typeof(WindowsUpdateRepairFix) },
+            "Akku" => new[] { typeof(BatteryReportFix) },
             _ => Array.Empty<Type>()
         };
         return _allFixes.Where(f => wanted.Contains(f.GetType())).ToList();

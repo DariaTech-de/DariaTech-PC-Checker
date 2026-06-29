@@ -63,6 +63,7 @@ public partial class App : Application
         services.AddSingleton<ICheck, CpuMemoryCheck>();
         services.AddSingleton<ICheck, DiskSpaceCheck>();
         services.AddSingleton<ICheck, SmartHealthCheck>();
+        services.AddSingleton<ICheck, StorageDetailCheck>();
         services.AddSingleton<ICheck, BatteryCheck>();
         services.AddSingleton<ICheck, SecurityCheck>();
         services.AddSingleton<ICheck, WindowsUpdateCheck>();
@@ -79,6 +80,7 @@ public partial class App : Application
         services.AddSingleton<IFixAction, WindowsUpdateRepairFix>();
         services.AddSingleton<IFixAction, CheckDiskFix>();
         services.AddSingleton<IFixAction, WinsockResetFix>();
+        services.AddSingleton<IFixAction, BatteryReportFix>();
 
         // Core-Dienste
         services.AddSingleton<DiagnosticEngine>();

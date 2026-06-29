@@ -25,8 +25,11 @@ public sealed class LibreHardwareSensorService : ISensorService
     {
         get
         {
-            EnsureInitialized();
-            return _computer is not null;
+            lock (_gate)
+            {
+                EnsureInitialized();
+                return _computer is not null;
+            }
         }
     }
 
@@ -106,6 +109,8 @@ public sealed class LibreHardwareSensorService : ISensorService
         SensorType.Clock => SensorKind.ClockMhz,
         SensorType.Voltage => SensorKind.Voltage,
         SensorType.Power => SensorKind.Power,
+        SensorType.Level => SensorKind.Level,
+        SensorType.Data => SensorKind.Data,
         _ => null
     };
 

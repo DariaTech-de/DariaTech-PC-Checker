@@ -9,6 +9,8 @@ public enum SensorKind
     ClockMhz,    // MHz
     Voltage,     // V
     Power,       // W
+    Level,       // % (z. B. SSD-Restlebensdauer, belegter Speicher)
+    Data,        // GB (z. B. geschriebene Datenmenge)
     Other
 }
 
@@ -35,6 +37,8 @@ public sealed record SensorReading(
         SensorKind.ClockMhz => "MHz",
         SensorKind.Voltage => "V",
         SensorKind.Power => "W",
+        SensorKind.Level => "%",
+        SensorKind.Data => "GB",
         _ => string.Empty
     };
 }
