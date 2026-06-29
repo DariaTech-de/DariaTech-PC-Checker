@@ -92,6 +92,7 @@ public partial class App : Application
 
         // UI
         services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<GamingViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
     }

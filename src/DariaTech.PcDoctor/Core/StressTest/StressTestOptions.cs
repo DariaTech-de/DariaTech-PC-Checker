@@ -17,4 +17,18 @@ public sealed class StressTestOptions
 
     /// <summary>GPU-Temperatur (°C), ab der von Drosselung ausgegangen wird.</summary>
     public double GpuTempCriticalC { get; init; } = 90;
+
+    // --- Sicherheit ---
+
+    /// <summary>
+    /// Automatische Notabschaltung des Tests, sobald eine Sicherheitstemperatur
+    /// erreicht wird (verhindert Hitzeschäden). Standardmäßig aktiv.
+    /// </summary>
+    public bool EnableThermalSafety { get; init; } = true;
+
+    /// <summary>CPU-Temperatur (°C), bei der der Test sofort abgebrochen wird.</summary>
+    public double SafetyCpuTempC { get; init; } = 98;
+
+    /// <summary>GPU-Temperatur (°C), bei der der Test sofort abgebrochen wird.</summary>
+    public double SafetyGpuTempC { get; init; } = 95;
 }

@@ -35,6 +35,10 @@ public sealed class StressTestReport
     public bool Stable { get; init; } = true;
     public string StabilityNote { get; init; } = string.Empty;
 
+    /// <summary>True, wenn der Test zum Schutz vor Überhitzung automatisch abgebrochen wurde.</summary>
+    public bool SafetyAborted { get; init; }
+    public string SafetyNote { get; init; } = string.Empty;
+
     /// <summary>Gesamt-Ampel des Stresstests.</summary>
     public Severity Severity { get; init; } = Severity.Ok;
 

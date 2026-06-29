@@ -13,13 +13,16 @@ public static class StressTestAnalyzer
         IReadOnlyList<StressSample> samples,
         StressTestOptions options,
         bool workerFaulted = false,
-        string? faultNote = null)
+        string? faultNote = null,
+        bool safetyAborted = false,
+        string? safetyNote = null)
     {
         var duration = samples.Count > 0 ? samples[^1].Elapsed : TimeSpan.Zero;
         var stable = !workerFaulted;
         var stabilityNote = workerFaulted
             ? (faultNote ?? "Während des Tests trat ein Fehler auf.")
             : "Keine Fehler/Abstürze während des Tests.";
+        var safeNote = safetyNote ?? "Kritische Temperatur erreicht.";
 
         if (samples.Count == 0)
         {
@@ -29,10 +32,14 @@ public static class StressTestAnalyzer
                 SampleCount = 0,
                 Stable = stable,
                 StabilityNote = stabilityNote,
-                Severity = stable ? Severity.Info : Severity.Critical,
-                Verdict = stable
-                    ? "Keine Sensordaten erfasst (Sensorik nicht verfügbar?)."
-                    : "Test instabil – siehe Stabilitätshinweis."
+                SafetyAborted = safetyAborted,
+                SafetyNote = safetyAborted ? safeNote : string.Empty,
+                Severity = (stable && !safetyAborted) ? Severity.Info : Severity.Critical,
+                Verdict = safetyAborted
+                    ? $"Sicherheitsabschaltung: {safeNote} Der Test wurde zum Schutz der Hardware gestoppt."
+                    : stable
+                        ? "Keine Sensordaten erfasst (Sensorik nicht verfügbar?)."
+                        : "Test instabil – siehe Stabilitätshinweis."
             };
         }
 
@@ -52,11 +59,13 @@ public static class StressTestAnalyzer
             (maxCpuTemp is double ct && ct >= options.CpuTempCriticalC) ||
             (maxGpuTemp is double gt && gt >= options.GpuTempCriticalC);
 
-        var throttling = thermalThrottle || clockThrottle;
+        var throttling = thermalThrottle || clockThrottle || safetyAborted;
         var throttleNote = BuildThrottleNote(thermalThrottle, clockThrottle, clockNote, maxCpuTemp, maxGpuTemp, options);
 
-        var severity = DetermineSeverity(stable, throttling, maxCpuTemp, options);
-        var verdict = BuildVerdict(severity, stable, throttling, maxCpuTemp, maxGpuTemp, maxFan);
+        var severity = safetyAborted ? Severity.Critical : DetermineSeverity(stable, throttling, maxCpuTemp, options);
+        var verdict = safetyAborted
+            ? $"Sicherheitsabschaltung: {safeNote} Der Test wurde zum Schutz der Hardware automatisch gestoppt – Kühlung dringend prüfen."
+            : BuildVerdict(severity, stable, throttling, maxCpuTemp, maxGpuTemp, maxFan);
 
         return new StressTestReport
         {
@@ -73,6 +82,8 @@ public static class StressTestAnalyzer
             ThrottlingNote = throttleNote,
             Stable = stable,
             StabilityNote = stabilityNote,
+            SafetyAborted = safetyAborted,
+            SafetyNote = safetyAborted ? safeNote : string.Empty,
             Severity = severity,
             Verdict = verdict
         };

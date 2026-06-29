@@ -40,6 +40,8 @@ public sealed class StressTestService
             workers.Add(Task.Run(() => MemoryLoad(options.MemoryMegabytes, token), token));
 
         var samples = new List<StressSample>();
+        var safetyAborted = false;
+        string? safetyNote = null;
         var start = DateTime.UtcNow;
         try
         {
@@ -50,6 +52,19 @@ public sealed class StressTestService
                 samples.Add(new StressSample(elapsed, readings));
                 progress?.Report(new StressProgress(elapsed, options.Duration, readings));
 
+                // Sicherheit: bei kritischer Temperatur sofort abbrechen.
+                if (options.EnableThermalSafety)
+                {
+                    safetyNote = CheckSafety(readings, options);
+                    if (safetyNote is not null)
+                    {
+                        safetyAborted = true;
+                        _log.LogWarning("Stresstest-Notabschaltung: {Reason}", safetyNote);
+                        cts.Cancel();
+                        break;
+                    }
+                }
+
                 try { await Task.Delay(options.SampleInterval, token).ConfigureAwait(false); }
                 catch (OperationCanceledException) { break; }
             }
@@ -57,10 +72,30 @@ public sealed class StressTestService
         catch (OperationCanceledException) { /* Test beendet/abgebrochen */ }
 
         var (faulted, note) = await StopWorkersAsync(workers).ConfigureAwait(false);
-        _log.LogInformation("Stresstest beendet: {Samples} Samples, stabil={Stable}",
-            samples.Count, !faulted);
+        _log.LogInformation("Stresstest beendet: {Samples} Samples, stabil={Stable}, Notabschaltung={Safety}",
+            samples.Count, !faulted, safetyAborted);
 
-        return StressTestAnalyzer.Analyze(samples, options, faulted, note);
+        return StressTestAnalyzer.Analyze(samples, options, faulted, note, safetyAborted, safetyNote);
+    }
+
+    /// <summary>Liefert einen Abbruchgrund, wenn eine Sicherheitstemperatur erreicht ist – sonst null.</summary>
+    private static string? CheckSafety(IReadOnlyList<SensorReading> readings, StressTestOptions options)
+    {
+        double? cpu = null, gpu = null;
+        foreach (var r in readings)
+        {
+            if (r.Kind != SensorKind.Temperature) continue;
+            if (string.Equals(r.HardwareType, "Cpu", StringComparison.OrdinalIgnoreCase))
+                cpu = cpu is null ? r.Value : Math.Max(cpu.Value, r.Value);
+            else if (r.HardwareType.StartsWith("Gpu", StringComparison.OrdinalIgnoreCase))
+                gpu = gpu is null ? r.Value : Math.Max(gpu.Value, r.Value);
+        }
+
+        if (cpu is double c && c >= options.SafetyCpuTempC)
+            return $"CPU erreichte {c:0} °C (Sicherheitsgrenze {options.SafetyCpuTempC:0} °C).";
+        if (gpu is double g && g >= options.SafetyGpuTempC)
+            return $"GPU erreichte {g:0} °C (Sicherheitsgrenze {options.SafetyGpuTempC:0} °C).";
+        return null;
     }
 
     private IReadOnlyList<SensorReading> SafeRead()

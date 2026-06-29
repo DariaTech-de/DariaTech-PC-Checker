@@ -37,6 +37,7 @@ public sealed partial class MainViewModel : ObservableObject
         ReportExporter reportExporter,
         ScanOptions scanOptions,
         IDialogService dialogs,
+        GamingViewModel gaming,
         ILogger<MainViewModel> log)
     {
         _engine = engine;
@@ -46,8 +47,12 @@ public sealed partial class MainViewModel : ObservableObject
         _reportExporter = reportExporter;
         _scanOptions = scanOptions;
         _dialogs = dialogs;
+        Gaming = gaming;
         _log = log;
     }
+
+    /// <summary>ViewModel des Tabs „Gaming &amp; Stresstest".</summary>
+    public GamingViewModel Gaming { get; }
 
     public ObservableCollection<AreaResultViewModel> Areas { get; } = new();
     public ObservableCollection<string> FixLog { get; } = new();

@@ -95,6 +95,24 @@ public class StressTestAnalyzerTests
     }
 
     [Fact]
+    public void Analyze_SafetyAborted_IsCriticalWithSafetyNote()
+    {
+        var samples = new List<StressSample>
+        {
+            Sample(0, Cpu(SensorKind.Temperature, 99), Cpu(SensorKind.Load, 100))
+        };
+
+        var report = StressTestAnalyzer.Analyze(samples, Opt,
+            safetyAborted: true, safetyNote: "CPU erreichte 99 °C (Sicherheitsgrenze 98 °C).");
+
+        Assert.True(report.SafetyAborted);
+        Assert.Equal(Severity.Critical, report.Severity);
+        Assert.True(report.ThermalThrottlingSuspected);
+        Assert.Contains("Sicherheitsabschaltung", report.Verdict);
+        Assert.Contains("99", report.SafetyNote);
+    }
+
+    [Fact]
     public void Analyze_AggregatesMinMaxAvgPerSensor()
     {
         var samples = new List<StressSample>
