@@ -52,6 +52,22 @@ manuell erfolgen:
 - [ ] Auf einem Gerät **ohne** Sensorik/Akku prüfen, dass alles sauber
       degradiert (keine Abstürze, nur Hinweise).
 
+## 4a. Klon-Engine bereitstellen (Tab „Klonen")
+
+Der Klon-Assistent nutzt **GNU ddrescue** als Engine (auch für defekte Platten).
+Aus Lizenz-/Signaturgründen ist sie **nicht** in der `.exe` enthalten:
+
+- Einen Windows-Build von `ddrescue.exe` besorgen und in den Ordner **`tools`**
+  neben der `.exe` legen (`…\tools\ddrescue.exe`).
+- Ohne diese Datei zeigt der Tab den Hinweis „ddrescue.exe fehlt" und das
+  Klonen bleibt gesperrt.
+
+Sicherheitsverhalten des Assistenten (zur Erinnerung): Quelle/Ziel werden mit
+Modell/Seriennummer/Größe/SMART angezeigt; die System-/Startplatte ist als Ziel
+**gesperrt**; zu kleines Ziel und identische Auswahl werden blockiert; der Start
+erfordert die getippte Bestätigung **KLONEN** und einen Bestätigungsdialog.
+ddrescue legt je Lauf ein Mapfile/Protokoll unter `DariaTech-Klonlogs` ab.
+
 ## 5. Übergabe
 
 `artifacts\DariaTech.PcDoctor.exe` (signiert) auf den USB-Stick kopieren.

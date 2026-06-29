@@ -39,6 +39,7 @@ public sealed partial class MainViewModel : ObservableObject
         IDialogService dialogs,
         GamingViewModel gaming,
         HistoryViewModel history,
+        CloneViewModel clone,
         ILogger<MainViewModel> log)
     {
         _engine = engine;
@@ -50,6 +51,7 @@ public sealed partial class MainViewModel : ObservableObject
         _dialogs = dialogs;
         Gaming = gaming;
         History = history;
+        Clone = clone;
         _log = log;
     }
 
@@ -58,6 +60,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>ViewModel des Tabs „Verlauf".</summary>
     public HistoryViewModel History { get; }
+
+    /// <summary>ViewModel des Tabs „Klonen".</summary>
+    public CloneViewModel Clone { get; }
 
     public ObservableCollection<AreaResultViewModel> Areas { get; } = new();
     public ObservableCollection<string> FixLog { get; } = new();
