@@ -116,6 +116,8 @@
                                            Command="{Binding ExportReportCommand}" />
                                 <ui:Button Content="Als PDF" Appearance="Primary" Margin="8,0,0,0" Padding="14,8"
                                            Command="{Binding ExportPdfCommand}" />
+                                <ui:Button Content="Im Verlauf speichern" Margin="8,0,0,0" Padding="14,8"
+                                           Command="{Binding SaveToHistoryCommand}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -347,6 +349,56 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
+            </TabItem>
+
+            <!-- ====================== Tab: Verlauf ====================== -->
+            <TabItem Header="Verlauf">
+                <Grid Margin="20" DataContext="{Binding History}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Kunde filtern:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox Width="220"
+                                 Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+                        <ui:Button Content="Aktualisieren" Margin="12,0,0,0"
+                                   Command="{Binding RefreshListCommand}" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="1" Text="{Binding Trend}" Margin="0,10,0,0"
+                               FontWeight="SemiBold" Foreground="#1F7A46" />
+
+                    <Grid Grid.Row="2" Margin="0,12,0,0">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray"
+                                   TextWrapping="Wrap" TextAlignment="Center" MaxWidth="460"
+                                   Text="Noch keine gespeicherten Befunde. Nach einem Scan in der Diagnose „Im Verlauf speichern" wählen – die Berichte werden portabel neben der App abgelegt."
+                                   Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                            <ItemsControl ItemsSource="{Binding Entries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                                BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                                            <DockPanel>
+                                                <ui:Button DockPanel.Dock="Right" Content="Bericht öffnen"
+                                                           VerticalAlignment="Center"
+                                                           Command="{Binding DataContext.History.OpenReportCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                                           CommandParameter="{Binding}" />
+                                                <TextBlock Text="{Binding Display}" VerticalAlignment="Center"
+                                                           TextWrapping="Wrap" FontSize="13" />
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
             </TabItem>
         </TabControl>
 

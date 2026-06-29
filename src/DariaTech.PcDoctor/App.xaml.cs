@@ -93,9 +93,13 @@ public partial class App : Application
         services.AddSingleton<ISensorService, LibreHardwareSensorService>();
         services.AddSingleton<StressTestService>();
 
+        // Verlauf
+        services.AddSingleton<IHistoryStore, JsonHistoryStore>();
+
         // UI
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<GamingViewModel>();
+        services.AddSingleton<HistoryViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
     }

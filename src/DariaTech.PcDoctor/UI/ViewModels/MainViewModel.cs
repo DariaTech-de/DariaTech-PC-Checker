@@ -38,6 +38,7 @@ public sealed partial class MainViewModel : ObservableObject
         ScanOptions scanOptions,
         IDialogService dialogs,
         GamingViewModel gaming,
+        HistoryViewModel history,
         ILogger<MainViewModel> log)
     {
         _engine = engine;
@@ -48,11 +49,15 @@ public sealed partial class MainViewModel : ObservableObject
         _scanOptions = scanOptions;
         _dialogs = dialogs;
         Gaming = gaming;
+        History = history;
         _log = log;
     }
 
     /// <summary>ViewModel des Tabs „Gaming &amp; Stresstest".</summary>
     public GamingViewModel Gaming { get; }
+
+    /// <summary>ViewModel des Tabs „Verlauf".</summary>
+    public HistoryViewModel History { get; }
 
     public ObservableCollection<AreaResultViewModel> Areas { get; } = new();
     public ObservableCollection<string> FixLog { get; } = new();
@@ -130,6 +135,28 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void SelectArea(AreaResultViewModel? area) => SelectedArea = area;
 
+    private ReportContext BuildContext() => new()
+    {
+        CustomerName = CustomerName,
+        OrderNumber = OrderNumber,
+        Technician = Technician
+    };
+
+    [RelayCommand(CanExecute = nameof(CanExport))]
+    private void SaveToHistory()
+    {
+        try
+        {
+            var entry = History.Save(_lastResults, BuildContext());
+            _dialogs.Inform("Im Verlauf gespeichert", entry.Display);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Speichern im Verlauf fehlgeschlagen");
+            _dialogs.Inform("Fehler", $"Konnte nicht im Verlauf gespeichert werden:\n{ex.Message}");
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanExport))]
     private void ExportReport() => ExportInternal(asPdf: false);
 
@@ -140,12 +167,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            var context = new ReportContext
-            {
-                CustomerName = CustomerName,
-                OrderNumber = OrderNumber,
-                Technician = Technician
-            };
+            var context = BuildContext();
 
             string? path;
             if (asPdf)
@@ -282,6 +304,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         ExportReportCommand.NotifyCanExecuteChanged();
         ExportPdfCommand.NotifyCanExecuteChanged();
+        SaveToHistoryCommand.NotifyCanExecuteChanged();
     }
 
     private void RefreshCommands()
@@ -289,6 +312,7 @@ public sealed partial class MainViewModel : ObservableObject
         ScanCommand.NotifyCanExecuteChanged();
         ExportReportCommand.NotifyCanExecuteChanged();
         ExportPdfCommand.NotifyCanExecuteChanged();
+        SaveToHistoryCommand.NotifyCanExecuteChanged();
         RunFixCommand.NotifyCanExecuteChanged();
     }
 }
