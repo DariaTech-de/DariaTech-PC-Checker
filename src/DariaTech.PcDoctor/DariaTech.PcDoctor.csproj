@@ -41,7 +41,8 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.*" />
-    <PackageReference Include="System.Management" Version="8.*" />
+    <!-- 10.x, da LibreHardwareMonitorLib System.Management >= 10.0.2 verlangt -->
+    <PackageReference Include="System.Management" Version="10.0.*" />
     <PackageReference Include="System.Diagnostics.EventLog" Version="8.*" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="WPF-UI" Version="3.*" />
