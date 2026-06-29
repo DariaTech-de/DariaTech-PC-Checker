@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using DariaTech.PcDoctor.Checks;
 using DariaTech.PcDoctor.Core;
+using DariaTech.PcDoctor.Core.Clone;
 using DariaTech.PcDoctor.Core.StressTest;
 using DariaTech.PcDoctor.Fixes;
 using DariaTech.PcDoctor.Infrastructure;
@@ -95,6 +96,10 @@ public partial class App : Application
 
         // Verlauf
         services.AddSingleton<IHistoryStore, JsonHistoryStore>();
+
+        // Klonen (Datenträger 1:1)
+        services.AddSingleton<IPhysicalDiskService, WmiPhysicalDiskService>();
+        services.AddSingleton<DiskCloneService>();
 
         // UI
         services.AddSingleton<IDialogService, DialogService>();
