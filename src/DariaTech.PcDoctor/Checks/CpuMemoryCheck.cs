@@ -68,5 +68,4 @@ public sealed class CpuMemoryCheck : ICheck
 
             return results;
         }, ct);
-    }
 }
