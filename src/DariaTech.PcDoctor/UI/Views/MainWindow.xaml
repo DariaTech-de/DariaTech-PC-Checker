@@ -1,0 +1,446 @@
+<ui:FluentWindow
+    x:Class="DariaTech.PcDoctor.UI.Views.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:DariaTech.PcDoctor.UI.ViewModels"
+    xmlns:conv="clr-namespace:DariaTech.PcDoctor.UI.Converters"
+    xmlns:controls="clr-namespace:DariaTech.PcDoctor.UI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="DariaTech PC-Doktor"
+    Width="1180" Height="800"
+    MinWidth="980" MinHeight="640"
+    WindowStartupLocation="CenterScreen"
+    ExtendsContentIntoTitleBar="True"
+    WindowBackdropType="Mica"
+    d:DataContext="{d:DesignInstance vm:MainViewModel}">
+
+    <Window.Resources>
+        <conv:SeverityToBrushConverter x:Key="SeverityToBrush" />
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+        <conv:NullToVisibilityConverter x:Key="NullToVis" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Titelleiste -->
+        <ui:TitleBar Grid.Row="0" Title="DariaTech PC-Doktor" />
+
+        <!-- Marken-Header (Petrol) mit Logo und Gesamtampel -->
+        <Border Grid.Row="1" Background="#0E3B34" Padding="24,16">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="/Assets/logo-mark.png" Width="36" Height="36"
+                           Margin="0,0,14,0" VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="DariaTech PC-Doktor" Foreground="White"
+                                   FontSize="22" FontWeight="SemiBold" />
+                        <TextBlock Text="Zustandsanalyse &amp; Schnellreparatur für Windows-PCs"
+                                   Foreground="#6FE0A8" FontSize="13" Margin="0,2,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding HasResults, Converter={StaticResource BoolToVis}}">
+                    <Ellipse Width="22" Height="22" VerticalAlignment="Center"
+                             Fill="{Binding OverallSeverity, Converter={StaticResource SeverityToBrush}}" />
+                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Foreground="White" FontSize="13">
+                            <Run Text="{Binding CriticalCount, Mode=OneWay}" FontWeight="Bold" />
+                            <Run Text="Kritisch" />
+                        </TextBlock>
+                        <TextBlock Foreground="White" FontSize="13">
+                            <Run Text="{Binding WarningCount, Mode=OneWay}" FontWeight="Bold" />
+                            <Run Text="Warnungen" />
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Tabs -->
+        <TabControl Grid.Row="2" Margin="0" BorderThickness="0" Padding="0">
+
+            <!-- ====================== Tab: Diagnose ====================== -->
+            <TabItem Header="Diagnose">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Aktionsleiste -->
+                    <Border Grid.Row="0" Padding="24,14" Background="{DynamicResource ApplicationBackgroundBrush}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Border DockPanel.Dock="Right" CornerRadius="12" Padding="12,5"
+                                        VerticalAlignment="Center"
+                                        Background="{Binding OverallSeverity, Converter={StaticResource SeverityToBrush}}"
+                                        Visibility="{Binding HasResults, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Foreground="White" FontWeight="SemiBold">
+                                        <Run Text="Gesundheit " /><Run Text="{Binding HealthScore, Mode=OneWay}" /><Run Text="/100" />
+                                    </TextBlock>
+                                </Border>
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:Button Content="Vollständigen Scan starten"
+                                               Appearance="Primary" FontSize="14" Padding="18,10"
+                                               Command="{Binding ScanCommand}"
+                                               Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                    <ui:Button Content="Scan abbrechen" FontSize="14" Padding="18,10"
+                                               Command="{Binding CancelCommand}"
+                                               Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" />
+                                    <CheckBox Content="Schnellmodus (Update-Prüfung überspringen)"
+                                              Margin="20,0,0,0" VerticalAlignment="Center"
+                                              IsChecked="{Binding SkipWindowsUpdate}" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Kunde:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Width="160" Margin="0,0,14,0" Text="{Binding CustomerName}" />
+                                <TextBlock Text="Auftrag:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Width="110" Margin="0,0,14,0" Text="{Binding OrderNumber}" />
+                                <TextBlock Text="Techniker:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Width="130" Margin="0,0,18,0" Text="{Binding Technician}" />
+                                <ui:Button Content="Als HTML" Padding="14,8"
+                                           Command="{Binding ExportReportCommand}" />
+                                <ui:Button Content="Als PDF" Appearance="Primary" Margin="8,0,0,0" Padding="14,8"
+                                           Command="{Binding ExportPdfCommand}" />
+                                <ui:Button Content="Im Verlauf speichern" Margin="8,0,0,0" Padding="14,8"
+                                           Command="{Binding SaveToHistoryCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Inhalt: Kacheln + Detail -->
+                    <Grid Grid.Row="1" Margin="16,8,16,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="Starte einen Scan, um den Zustand des PCs zu sehen."
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontSize="15" Foreground="Gray"
+                                   Visibility="{Binding HasResults, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+
+                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto"
+                                      Visibility="{Binding HasResults, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl ItemsSource="{Binding Areas}" Margin="8">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:AreaResultViewModel}">
+                                        <Button Width="250" Height="120" Margin="8"
+                                                HorizontalContentAlignment="Stretch"
+                                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                                Command="{Binding DataContext.SelectAreaCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="*" />
+                                                </Grid.RowDefinitions>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="14" Height="14" VerticalAlignment="Center"
+                                                             Fill="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
+                                                    <TextBlock Text="{Binding Area}" FontWeight="SemiBold"
+                                                               FontSize="14" Margin="8,0,0,0"
+                                                               TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Row="1" Text="{Binding Summary}" Margin="0,8,0,0"
+                                                           Foreground="Gray" TextWrapping="Wrap"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <Border Grid.Column="1" Width="380" Margin="8,8,0,8"
+                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="16"
+                                Visibility="{Binding SelectedArea, Converter={StaticResource NullToVis}}">
+                            <DockPanel DataContext="{Binding SelectedArea}">
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding Area}"
+                                           FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0"
+                                            Visibility="{Binding HasFixes, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Reparaturen" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding Fixes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <ui:Button Content="{Binding Title}"
+                                                           Margin="0,0,0,6" HorizontalAlignment="Stretch"
+                                                           Command="{Binding DataContext.RunFixCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                                           CommandParameter="{Binding}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
+                                    <ItemsControl ItemsSource="{Binding Results}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="0,4">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="150" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Label}" Foreground="Gray"
+                                                                   TextWrapping="Wrap" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Value}"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
+                                                    </Grid>
+                                                    <ItemsControl ItemsSource="{Binding Fixes}" Margin="0,4,0,0">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <ui:Button Content="{Binding Title}"
+                                                                           Padding="8,4" FontSize="12"
+                                                                           HorizontalAlignment="Left"
+                                                                           Command="{Binding DataContext.RunFixCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                                                           CommandParameter="{Binding}" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- ================== Tab: Gaming & Stresstest ================== -->
+            <TabItem Header="Gaming &amp; Stresstest">
+                <ScrollViewer Background="#0B2E29" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24" DataContext="{Binding Gaming}">
+
+                        <TextBlock Text="Gaming &amp; Stresstest" FontSize="20"
+                                   FontWeight="SemiBold" Foreground="White" />
+                        <TextBlock Text="{Binding SensorStatus}" Foreground="#9FC9BC" Margin="0,4,0,0"
+                                   TextWrapping="Wrap" />
+                        <ui:Button Content="{Binding MonitoringButtonText}" Margin="0,12,0,0"
+                                   Padding="16,8" Command="{Binding ToggleMonitoringCommand}" />
+
+                        <!-- Tachos -->
+                        <UniformGrid Columns="4" Margin="0,18,0,0">
+                            <controls:RadialGauge Height="170" Margin="6"
+                                Value="{Binding CpuTempC}" HasValue="{Binding HasCpuTemp}"
+                                Maximum="100" WarnThreshold="85" CriticalThreshold="95"
+                                Unit="°" Caption="CPU-Temp" />
+                            <controls:RadialGauge Height="170" Margin="6"
+                                Value="{Binding GpuTempC}" HasValue="{Binding HasGpuTemp}"
+                                Maximum="100" WarnThreshold="83" CriticalThreshold="90"
+                                Unit="°" Caption="GPU-Temp" />
+                            <controls:RadialGauge Height="170" Margin="6"
+                                Value="{Binding CpuLoadPct}" HasValue="{Binding HasCpuLoad}"
+                                Maximum="100" Unit="%" Caption="CPU-Last" />
+                            <controls:RadialGauge Height="170" Margin="6"
+                                Value="{Binding MaxFanRpm}" HasValue="{Binding HasFan}"
+                                Maximum="3000" Unit="" Caption="Lüfter (RPM)" />
+                        </UniformGrid>
+
+                        <!-- Verlaufsdiagramm -->
+                        <Border Background="#0E3B34" CornerRadius="8" Padding="14" Margin="0,18,0,0">
+                            <StackPanel>
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                                                HorizontalAlignment="Right">
+                                        <Ellipse Width="10" Height="10" Fill="#6FE0A8" VerticalAlignment="Center" />
+                                        <TextBlock Text="CPU" Foreground="#CFE9DF" Margin="6,0,16,0" FontSize="12" />
+                                        <Ellipse Width="10" Height="10" Fill="#F2B441" VerticalAlignment="Center" />
+                                        <TextBlock Text="GPU" Foreground="#CFE9DF" Margin="6,0,0,0" FontSize="12" />
+                                    </StackPanel>
+                                    <TextBlock Text="Temperaturverlauf (°C)" Foreground="White" FontWeight="SemiBold" />
+                                </DockPanel>
+                                <controls:SensorGraph Height="170" Margin="0,10,0,0" YMax="100"
+                                    CpuSeries="{Binding CpuTempHistory}" GpuSeries="{Binding GpuTempHistory}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Stresstest -->
+                        <Border Background="#0E3B34" CornerRadius="8" Padding="18" Margin="0,18,0,24">
+                            <StackPanel>
+                                <TextBlock Text="Stresttest" FontWeight="SemiBold" Foreground="White" FontSize="16" />
+                                <TextBlock TextWrapping="Wrap" Foreground="#9FC9BC" Margin="0,2,0,12"
+                                           Text="Belastet CPU und Arbeitsspeicher voll aus und protokolliert Temperaturen, Lüfter und Drosselung. Sicherheit: automatische Notabschaltung bei kritischer Temperatur, jederzeit per Stopp abbrechbar." />
+
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Dauer (Minuten):" Foreground="White" VerticalAlignment="Center" />
+                                    <TextBox Width="64" Margin="10,0,16,0"
+                                             Text="{Binding StressDurationMinutes, Mode=TwoWay}" />
+                                    <ui:Button Content="Stresstest starten" Appearance="Primary" Padding="16,8"
+                                               Command="{Binding StartStressCommand}"
+                                               Visibility="{Binding IsStressRunning, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                    <ui:Button Content="⛔ Stoppen" Appearance="Danger" Padding="16,8"
+                                               Command="{Binding CancelStressCommand}"
+                                               Visibility="{Binding IsStressRunning, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+
+                                <!-- Fortschritt -->
+                                <StackPanel Margin="0,14,0,0"
+                                            Visibility="{Binding IsStressRunning, Converter={StaticResource BoolToVis}}">
+                                    <ProgressBar Height="8" Minimum="0" Maximum="100"
+                                                 Value="{Binding StressProgressPercent}" />
+                                    <TextBlock Text="{Binding StressStatus}" Foreground="#9FC9BC" Margin="0,8,0,0"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <!-- Ergebnis -->
+                                <Border Margin="0,14,0,0" Background="#0B2E29" CornerRadius="6" Padding="14"
+                                        Visibility="{Binding HasReport, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel DataContext="{Binding StressReport}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="16" Height="16" VerticalAlignment="Center"
+                                                     Fill="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
+                                            <TextBlock Text="{Binding Verdict}" Foreground="White"
+                                                       FontWeight="SemiBold" TextWrapping="Wrap"
+                                                       Margin="10,0,0,0" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding ThrottlingNote}" Foreground="#CFE9DF"
+                                                   Margin="0,10,0,0" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding StabilityNote}" Foreground="#CFE9DF"
+                                                   Margin="0,4,0,0" TextWrapping="Wrap" />
+                                        <TextBlock Text="Temperaturen (Min–Max, Ø):" Foreground="White"
+                                                   FontWeight="SemiBold" Margin="0,12,0,4" />
+                                        <ItemsControl ItemsSource="{Binding Temperatures}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Foreground="#CFE9DF" FontSize="12.5" Margin="0,2">
+                                                        <Run Text="{Binding Hardware, Mode=OneWay}" FontWeight="SemiBold" />
+                                                        <Run Text="·" />
+                                                        <Run Text="{Binding Name, Mode=OneWay}" />
+                                                        <Run Text="  " />
+                                                        <Run Text="{Binding Min, Mode=OneWay}" />
+                                                        <Run Text="–" />
+                                                        <Run Text="{Binding Max, Mode=OneWay}" />
+                                                        <Run Text=" °C  (Ø " />
+                                                        <Run Text="{Binding Avg, Mode=OneWay}" />
+                                                        <Run Text=")" />
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ====================== Tab: Verlauf ====================== -->
+            <TabItem Header="Verlauf">
+                <Grid Margin="20" DataContext="{Binding History}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Kunde filtern:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox Width="220"
+                                 Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+                        <ui:Button Content="Aktualisieren" Margin="12,0,0,0"
+                                   Command="{Binding RefreshListCommand}" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="1" Text="{Binding Trend}" Margin="0,10,0,0"
+                               FontWeight="SemiBold" Foreground="#1F7A46" />
+
+                    <Grid Grid.Row="2" Margin="0,12,0,0">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray"
+                                   TextWrapping="Wrap" TextAlignment="Center" MaxWidth="460"
+                                   Text="Noch keine gespeicherten Befunde. Nach einem Scan in der Diagnose „Im Verlauf speichern“ wählen – die Berichte werden portabel neben der App abgelegt."
+                                   Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                            <ItemsControl ItemsSource="{Binding Entries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                                BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                                            <DockPanel>
+                                                <ui:Button DockPanel.Dock="Right" Content="Bericht öffnen"
+                                                           VerticalAlignment="Center"
+                                                           Command="{Binding DataContext.History.OpenReportCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                                           CommandParameter="{Binding}" />
+                                                <TextBlock Text="{Binding Display}" VerticalAlignment="Center"
+                                                           TextWrapping="Wrap" FontSize="13" />
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- Statusleiste -->
+        <Border Grid.Row="3" Padding="24,10" Background="{DynamicResource ApplicationBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal">
+                <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,10,0"
+                                 Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" />
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- Fix-Overlay -->
+        <Grid Grid.RowSpan="4" Background="#AA000000"
+              Visibility="{Binding IsFixRunning, Converter={StaticResource BoolToVis}}">
+            <Border Width="560" MaxHeight="480" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Background="{DynamicResource ApplicationBackgroundBrush}"
+                    CornerRadius="10" Padding="24">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+                        <ui:ProgressRing IsIndeterminate="True" Width="22" Height="22" Margin="0,0,12,0" />
+                        <TextBlock Text="{Binding CurrentFixTitle}" FontSize="16"
+                                   FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ui:Button DockPanel.Dock="Bottom" Content="Abbrechen" HorizontalAlignment="Right"
+                               Margin="0,12,0,0" Command="{Binding CancelCommand}" />
+                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                            CornerRadius="6" Padding="10">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding FixLog}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontFamily="Consolas"
+                                                   FontSize="12" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>
