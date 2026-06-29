@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using DariaTech.PcDoctor.Models;
@@ -17,6 +18,7 @@ public sealed class ReportExporter
     /// </summary>
     public string Export(
         IReadOnlyList<CheckResult> results,
+        ReportContext? context = null,
         string? targetFolder = null,
         DateTime? timestamp = null)
     {
@@ -29,12 +31,77 @@ public sealed class ReportExporter
         var file = Path.Combine(folder,
             $"PC-Doktor_{computer}_{now:yyyy-MM-dd_HHmm}.html");
 
-        File.WriteAllText(file, BuildHtml(results, computer, now), new UTF8Encoding(false));
+        File.WriteAllText(file, BuildHtml(results, computer, now, context), new UTF8Encoding(false));
         return file;
     }
 
+    /// <summary>
+    /// Erzeugt zusätzlich ein PDF, indem der HTML-Bericht über Microsoft Edge
+    /// (headless) gedruckt wird – ohne externe Bibliothek. Liefert den PDF-Pfad
+    /// oder <c>null</c>, falls Edge nicht gefunden wurde bzw. der Druck scheiterte.
+    /// </summary>
+    public string? ExportPdf(
+        IReadOnlyList<CheckResult> results,
+        ReportContext? context = null,
+        string? targetFolder = null,
+        DateTime? timestamp = null)
+    {
+        var html = Export(results, context, targetFolder, timestamp);
+        var edge = FindEdge();
+        if (edge is null) return null;
+
+        var pdf = Path.ChangeExtension(html, ".pdf");
+        try
+        {
+            var psi = new ProcessStartInfo(edge)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            psi.ArgumentList.Add("--headless=new");
+            psi.ArgumentList.Add("--disable-gpu");
+            psi.ArgumentList.Add("--no-pdf-header-footer");
+            psi.ArgumentList.Add($"--print-to-pdf={pdf}");
+            psi.ArgumentList.Add(new Uri(html).AbsoluteUri);
+
+            using var proc = Process.Start(psi);
+            if (proc is null) return null;
+            if (!proc.WaitForExit(60_000))
+            {
+                try { proc.Kill(true); } catch { /* egal */ }
+                return null;
+            }
+            return File.Exists(pdf) ? pdf : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? FindEdge()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                "Microsoft", "Edge", "Application", "msedge.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "Microsoft", "Edge", "Application", "msedge.exe")
+        };
+        return candidates.FirstOrDefault(File.Exists);
+    }
+
+    /// <summary>Gesundheits-Score 0–100 aus den Befunden (für Marketing/Übergabe).</summary>
+    public static int HealthScore(IReadOnlyList<CheckResult> results)
+    {
+        var crit = results.Count(r => r.Severity == Severity.Critical);
+        var warn = results.Count(r => r.Severity == Severity.Warning);
+        return Math.Clamp(100 - crit * 20 - warn * 7, 0, 100);
+    }
+
     /// <summary>Erzeugt das vollständige HTML-Dokument (öffentlich für Tests).</summary>
-    public string BuildHtml(IReadOnlyList<CheckResult> results, string computer, DateTime now)
+    public string BuildHtml(IReadOnlyList<CheckResult> results, string computer, DateTime now,
+        ReportContext? context = null)
     {
         var critical = results.Where(r => r.Severity == Severity.Critical).ToList();
         var warnings = results.Where(r => r.Severity == Severity.Warning).ToList();
@@ -66,6 +133,9 @@ public sealed class ReportExporter
         }
 
         var logo = CompanyInfo.LogoSvg(42);
+        var score = HealthScore(results);
+        var scoreClass = score >= 80 ? "ok" : score >= 50 ? "warn" : "crit";
+        var handover = BuildHandover(context, now);
 
         return $$"""
 <!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
@@ -93,6 +163,12 @@ public sealed class ReportExporter
   footer{padding:16px 32px;font-size:12px;border-top:1px solid #eef1f5;background:#f7faf9;}
   footer .pub{color:#0E3B34;font-size:12.5px;}
   footer .disclaimer{color:#9aa6b0;margin-top:6px;}
+  .score{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:12px;font-size:12.5px;font-weight:600;}
+  .score.ok{background:#1f7a46;color:#eafff2;}
+  .score.warn{background:#9a6700;color:#fff7e6;}
+  .score.crit{background:#a32b22;color:#ffeceb;}
+  .handover{background:#f3f7f6;border:1px solid #e1eae7;border-radius:8px;padding:12px 16px;margin-bottom:8px;}
+  .handover td.label{color:#0E3B34;width:120px;font-weight:600;}
 </style></head>
 <body><div class="wrap">
 <header>
@@ -103,9 +179,11 @@ public sealed class ReportExporter
   <div class="meta">
     <div class="doc">PC-Doktor &middot; Kundenbericht</div>
     <div>{{Enc(computer)}} &middot; {{now:dd.MM.yyyy HH:mm}} Uhr</div>
+    <div class="score {{scoreClass}}">Gesundheit {{score}}/100</div>
   </div>
 </header>
 <div class="content">
+{{handover}}
 <h2>Zusammenfassung</h2>
 {{summary}}
 {{sections}}
@@ -131,6 +209,25 @@ public sealed class ReportExporter
         Severity.Critical => "crit",
         _ => "info"
     };
+
+    private static string BuildHandover(ReportContext? c, DateTime now)
+    {
+        if (c is null || !c.HasAny) return string.Empty;
+
+        var sb = new StringBuilder("<h2>Übergabe</h2><div class='handover'><table>");
+        void Row(string label, string? value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+                sb.Append($"<tr><td class='label'>{Enc(label)}</td><td>{Enc(value)}</td></tr>");
+        }
+        Row("Kunde", c.CustomerName);
+        Row("Auftrag", c.OrderNumber);
+        Row("Techniker", c.Technician);
+        Row("Datum", now.ToString("dd.MM.yyyy"));
+        Row("Notizen", c.Notes);
+        sb.Append("</table></div>");
+        return sb.ToString();
+    }
 
     // Wie der PowerShell-Prototyp: nur &, &lt;, &gt; ersetzen (Reihenfolge: & zuerst).
     // So bleiben Umlaute und Sonderzeichen als lesbares UTF-8 im Bericht erhalten.

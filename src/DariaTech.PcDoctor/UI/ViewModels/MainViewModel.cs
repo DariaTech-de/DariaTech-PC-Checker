@@ -63,6 +63,12 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private Severity _overallSeverity = Severity.Ok;
     [ObservableProperty] private int _criticalCount;
     [ObservableProperty] private int _warningCount;
+    [ObservableProperty] private int _healthScore = 100;
+
+    // Übergabe-/Kundendaten für den Bericht
+    [ObservableProperty] private string _customerName = string.Empty;
+    [ObservableProperty] private string _orderNumber = string.Empty;
+    [ObservableProperty] private string _technician = string.Empty;
 
     [ObservableProperty] private AreaResultViewModel? _selectedArea;
     [ObservableProperty] private bool _isFixRunning;
@@ -125,20 +131,55 @@ public sealed partial class MainViewModel : ObservableObject
     private void SelectArea(AreaResultViewModel? area) => SelectedArea = area;
 
     [RelayCommand(CanExecute = nameof(CanExport))]
-    private void ExportReport()
+    private void ExportReport() => ExportInternal(asPdf: false);
+
+    [RelayCommand(CanExecute = nameof(CanExport))]
+    private void ExportPdf() => ExportInternal(asPdf: true);
+
+    private void ExportInternal(bool asPdf)
     {
         try
         {
-            var path = _reportExporter.Export(_lastResults);
+            var context = new ReportContext
+            {
+                CustomerName = CustomerName,
+                OrderNumber = OrderNumber,
+                Technician = Technician
+            };
+
+            string? path;
+            if (asPdf)
+            {
+                path = _reportExporter.ExportPdf(_lastResults, context);
+                if (path is null)
+                {
+                    // Edge nicht gefunden – HTML als Ersatz erzeugen.
+                    path = _reportExporter.Export(_lastResults, context);
+                    _dialogs.Inform("PDF nicht möglich",
+                        "Microsoft Edge wurde nicht gefunden – es wurde stattdessen die HTML-Datei erstellt:\n" + path);
+                    OpenFile(path);
+                    return;
+                }
+            }
+            else
+            {
+                path = _reportExporter.Export(_lastResults, context);
+            }
+
             _dialogs.Inform("Bericht erstellt", $"Der Bericht wurde gespeichert:\n{path}");
-            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }); }
-            catch { /* Öffnen optional */ }
+            OpenFile(path);
         }
         catch (Exception ex)
         {
             _log.LogError(ex, "Bericht-Export fehlgeschlagen");
             _dialogs.Inform("Fehler", $"Der Bericht konnte nicht erstellt werden:\n{ex.Message}");
         }
+    }
+
+    private static void OpenFile(string path)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }); }
+        catch { /* Öffnen optional */ }
     }
 
     private bool CanExport() => HasResults && !IsScanning && !IsFixRunning;
@@ -214,6 +255,7 @@ public sealed partial class MainViewModel : ObservableObject
         OverallSeverity = DiagnosticEngine.Overall(_lastResults);
         CriticalCount = _lastResults.Count(r => r.Severity == Severity.Critical);
         WarningCount = _lastResults.Count(r => r.Severity == Severity.Warning);
+        HealthScore = ReportExporter.HealthScore(_lastResults);
     }
 
     /// <summary>Ordnet den registrierten Reparaturen ihre Bereiche zu.</summary>
@@ -235,12 +277,17 @@ public sealed partial class MainViewModel : ObservableObject
     // CanExecute-Neuauswertung bei Statuswechsel.
     partial void OnIsScanningChanged(bool value) => RefreshCommands();
     partial void OnIsFixRunningChanged(bool value) => RefreshCommands();
-    partial void OnHasResultsChanged(bool value) => ExportReportCommand.NotifyCanExecuteChanged();
+    partial void OnHasResultsChanged(bool value)
+    {
+        ExportReportCommand.NotifyCanExecuteChanged();
+        ExportPdfCommand.NotifyCanExecuteChanged();
+    }
 
     private void RefreshCommands()
     {
         ScanCommand.NotifyCanExecuteChanged();
         ExportReportCommand.NotifyCanExecuteChanged();
+        ExportPdfCommand.NotifyCanExecuteChanged();
         RunFixCommand.NotifyCanExecuteChanged();
     }
 }

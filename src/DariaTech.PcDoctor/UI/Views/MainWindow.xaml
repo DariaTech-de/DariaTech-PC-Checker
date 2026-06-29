@@ -81,19 +81,42 @@
 
                     <!-- Aktionsleiste -->
                     <Border Grid.Row="0" Padding="24,14" Background="{DynamicResource ApplicationBackgroundBrush}">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:Button Content="Vollständigen Scan starten"
-                                       Appearance="Primary" FontSize="14" Padding="18,10"
-                                       Command="{Binding ScanCommand}"
-                                       Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
-                            <ui:Button Content="Scan abbrechen" FontSize="14" Padding="18,10"
-                                       Command="{Binding CancelCommand}"
-                                       Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" />
-                            <CheckBox Content="Schnellmodus (Update-Prüfung überspringen)"
-                                      Margin="20,0,0,0" VerticalAlignment="Center"
-                                      IsChecked="{Binding SkipWindowsUpdate}" />
-                            <ui:Button Content="Als HTML exportieren" Margin="20,0,0,0" Padding="14,8"
-                                       Command="{Binding ExportReportCommand}" />
+                        <StackPanel>
+                            <DockPanel>
+                                <Border DockPanel.Dock="Right" CornerRadius="12" Padding="12,5"
+                                        VerticalAlignment="Center"
+                                        Background="{Binding OverallSeverity, Converter={StaticResource SeverityToBrush}}"
+                                        Visibility="{Binding HasResults, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Foreground="White" FontWeight="SemiBold">
+                                        <Run Text="Gesundheit " /><Run Text="{Binding HealthScore, Mode=OneWay}" /><Run Text="/100" />
+                                    </TextBlock>
+                                </Border>
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:Button Content="Vollständigen Scan starten"
+                                               Appearance="Primary" FontSize="14" Padding="18,10"
+                                               Command="{Binding ScanCommand}"
+                                               Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                    <ui:Button Content="Scan abbrechen" FontSize="14" Padding="18,10"
+                                               Command="{Binding CancelCommand}"
+                                               Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" />
+                                    <CheckBox Content="Schnellmodus (Update-Prüfung überspringen)"
+                                              Margin="20,0,0,0" VerticalAlignment="Center"
+                                              IsChecked="{Binding SkipWindowsUpdate}" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Kunde:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Width="160" Margin="0,0,14,0" Text="{Binding CustomerName}" />
+                                <TextBlock Text="Auftrag:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Width="110" Margin="0,0,14,0" Text="{Binding OrderNumber}" />
+                                <TextBlock Text="Techniker:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Width="130" Margin="0,0,18,0" Text="{Binding Technician}" />
+                                <ui:Button Content="Als HTML" Padding="14,8"
+                                           Command="{Binding ExportReportCommand}" />
+                                <ui:Button Content="Als PDF" Appearance="Primary" Margin="8,0,0,0" Padding="14,8"
+                                           Command="{Binding ExportPdfCommand}" />
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
