@@ -235,7 +235,8 @@
 
             <!-- ================== Tab: Gaming & Stresstest ================== -->
             <TabItem Header="Gaming &amp; Stresstest">
-                <ScrollViewer Background="#0B2E29" VerticalScrollBarVisibility="Auto">
+                <Border Background="#0B2E29">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="24" DataContext="{Binding Gaming}">
 
                         <TextBlock Text="Gaming &amp; Stresstest" FontSize="20"
@@ -350,6 +351,7 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
+                </Border>
             </TabItem>
 
             <!-- ====================== Tab: Verlauf ====================== -->
