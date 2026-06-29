@@ -290,7 +290,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         IEnumerable<Type> wanted = area switch
         {
-            "Datenträger – Speicherplatz" => new[] { typeof(ClearTempFilesFix), typeof(CheckDiskFix) },
+            "Datenträger – Speicherplatz" => new[] { typeof(ClearTempFilesFix), typeof(ClearAppCacheFix), typeof(CheckDiskFix) },
             "Datenträger – Gesundheit (SMART)" => new[] { typeof(CheckDiskFix) },
             "System & Betriebssystem" => new[] { typeof(SystemFileRepairFix), typeof(ClearTempFilesFix) },
             "Netzwerk" => new[] { typeof(SpeedTestFix), typeof(FlushDnsFix), typeof(WinsockResetFix) },

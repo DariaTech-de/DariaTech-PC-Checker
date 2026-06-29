@@ -69,7 +69,8 @@
         </Border>
 
         <!-- Tabs -->
-        <TabControl Grid.Row="2" Margin="0" BorderThickness="0" Padding="0">
+        <TabControl x:Name="MainTabs" Grid.Row="2" Margin="0" BorderThickness="0" Padding="0"
+                    SelectionChanged="OnTabChanged">
 
             <!-- ====================== Tab: Diagnose ====================== -->
             <TabItem Header="Diagnose">
