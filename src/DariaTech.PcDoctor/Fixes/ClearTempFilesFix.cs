@@ -1,3 +1,4 @@
+using System.IO;
 using DariaTech.PcDoctor.Core;
 
 namespace DariaTech.PcDoctor.Fixes;
