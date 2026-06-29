@@ -105,6 +105,7 @@ public partial class App : Application
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<GamingViewModel>();
         services.AddSingleton<HistoryViewModel>();
+        services.AddSingleton<CloneViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
     }
