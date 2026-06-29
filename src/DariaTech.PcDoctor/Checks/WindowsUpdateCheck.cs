@@ -40,16 +40,36 @@ public sealed class WindowsUpdateCheck : ICheck
                 dynamic result = searcher.Search("IsInstalled=0 and Type='Software'");
                 int count = result.Updates.Count;
 
-                return count > 0
-                    ? new[]
+                if (count == 0)
+                    return new[] { new CheckResult(Area, "Status", "auf dem neuesten Stand", Severity.Ok) };
+
+                // Konkrete Update-Titel + ggf. KB-Nummer auslesen.
+                var titles = new List<string>();
+                for (var i = 0; i < count; i++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    try
                     {
-                        new CheckResult(Area, "Ausstehend", $"{count} Update(s)", Severity.Warning,
-                            $"{count} Windows-Update(s) ausstehend – installieren.")
+                        dynamic update = result.Updates[i];
+                        object? titleObj = update.Title;
+                        var title = titleObj?.ToString();
+                        titles.Add(string.IsNullOrWhiteSpace(title) ? "Unbenanntes Update" : title!);
                     }
-                    : new[]
-                    {
-                        new CheckResult(Area, "Status", "auf dem neuesten Stand", Severity.Ok)
-                    };
+                    catch { /* einzelnes Update überspringen */ }
+                }
+
+                var results = new List<CheckResult>
+                {
+                    new(Area, "Ausstehend", $"{count} Update(s)", Severity.Warning,
+                        $"{count} Windows-Update(s) ausstehend – über Einstellungen → Windows Update installieren.")
+                };
+                // Jeden Update-Titel als eigene Zeile (begrenzt, damit der Bericht lesbar bleibt).
+                foreach (var title in titles.Take(25))
+                    results.Add(new CheckResult(Area, "•", title, Severity.Warning));
+                if (titles.Count > 25)
+                    results.Add(new CheckResult(Area, "…", $"und {titles.Count - 25} weitere", Severity.Info));
+
+                return results.ToArray();
             }
             catch (OperationCanceledException) { throw; }
             catch

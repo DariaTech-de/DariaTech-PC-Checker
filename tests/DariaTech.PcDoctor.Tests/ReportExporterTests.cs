@@ -82,6 +82,22 @@ public class ReportExporterTests
     }
 
     [Fact]
+    public void BuildHtml_RendersDetailTextPerFinding()
+    {
+        var exporter = new ReportExporter();
+        var results = new[]
+        {
+            new CheckResult("Treiber & Geräte", "Problem", "Realtek Audio", Severity.Warning,
+                "Geräte-Manager-Code 28: Treiber nicht installiert.")
+        };
+
+        var html = exporter.BuildHtml(results, "PC", DateTime.Now);
+
+        Assert.Contains("class='detail'", html);
+        Assert.Contains("Treiber nicht installiert", html);
+    }
+
+    [Fact]
     public void BuildHtml_EncodesHtmlSpecialCharacters()
     {
         var exporter = new ReportExporter();

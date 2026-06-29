@@ -125,9 +125,12 @@ public sealed class ReportExporter
             sections.Append($"<h2>{Enc(group.Key)}</h2><table>");
             foreach (var e in group)
             {
+                var detail = string.IsNullOrWhiteSpace(e.Detail)
+                    ? string.Empty
+                    : $"<div class='detail'>{Enc(e.Detail)}</div>";
                 sections.Append(
                     $"<tr><td class='label'>{Enc(e.Label)}</td>" +
-                    $"<td class='{CssClass(e.Severity)}'>{Enc(e.Value)}</td></tr>");
+                    $"<td class='{CssClass(e.Severity)}'>{Enc(e.Value)}{detail}</td></tr>");
             }
             sections.Append("</table>");
         }
@@ -158,8 +161,9 @@ public sealed class ReportExporter
   h2{font-size:15px;color:#0E3B34;margin:22px 0 6px;border-bottom:2px solid #eef1f5;padding-bottom:4px;}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   td{padding:6px 8px;border-bottom:1px solid #f0f2f5;}
-  td.label{color:#5a6877;width:230px;}
+  td.label{color:#5a6877;width:230px;vertical-align:top;}
   td.ok{color:#1a7f37;} td.warn{color:#9a6700;font-weight:600;} td.crit{color:#b3261e;font-weight:600;}
+  td .detail{color:#6b7782;font-weight:400;font-size:12px;margin-top:3px;}
   footer{padding:16px 32px;font-size:12px;border-top:1px solid #eef1f5;background:#f7faf9;}
   footer .pub{color:#0E3B34;font-size:12.5px;}
   footer .disclaimer{color:#9aa6b0;margin-top:6px;}

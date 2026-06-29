@@ -65,17 +65,33 @@ public sealed partial class GamingViewModel : ObservableObject
     private async Task ToggleMonitoringAsync()
     {
         if (IsMonitoring) { StopMonitoring(); return; }
+        await StartMonitoringAsync().ConfigureAwait(true);
+    }
 
+    /// <summary>Startet das Monitoring automatisch beim Öffnen des Gaming-Tabs (falls noch nicht aktiv).</summary>
+    public async Task EnsureMonitoringAsync()
+    {
+        if (IsMonitoring || IsStressRunning) return;
+        await StartMonitoringAsync().ConfigureAwait(true);
+    }
+
+    private async Task StartMonitoringAsync()
+    {
         SensorStatus = "Initialisiere Sensorik …";
         SensorAvailable = await Task.Run(() => _sensors.IsAvailable).ConfigureAwait(true);
         if (!SensorAvailable)
         {
-            SensorStatus = "Sensorik nicht verfügbar – Adminrechte nötig, oder die Hardware liefert keine Sensoren.";
+            SensorStatus = "Sensorik nicht verfügbar – Temperaturen/Lüfter können auf diesem Gerät nicht " +
+                "angezeigt werden. Die App braucht Adminrechte; manche Geräte (v. a. ältere Business-" +
+                "Notebooks wie HP EliteBook) lassen den Sensor-Treiber nicht zu. Der Stresstest belastet " +
+                "die CPU trotzdem, nur ohne Temperaturanzeige.";
             return;
         }
 
         IsMonitoring = true;
         SensorStatus = "Live-Überwachung aktiv.";
+        // Sofort einmal lesen, damit die Tachos nicht eine Sekunde leer bleiben.
+        ApplyReadings(await Task.Run(() => _sensors.Read()).ConfigureAwait(true));
         _timer.Start();
     }
 

@@ -75,6 +75,7 @@ public partial class App : Application
 
         // Fixes (bereichsbezogen; DisableStartupItemFix wird je Eintrag vom Check erzeugt)
         services.AddSingleton<IFixAction, ClearTempFilesFix>();
+        services.AddSingleton<IFixAction, ClearAppCacheFix>();
         services.AddSingleton<IFixAction, SystemFileRepairFix>();
         services.AddSingleton<IFixAction, FlushDnsFix>();
         services.AddSingleton<IFixAction, DefenderQuickScanFix>();
@@ -83,6 +84,11 @@ public partial class App : Application
         services.AddSingleton<IFixAction, WinsockResetFix>();
         services.AddSingleton<IFixAction, BatteryReportFix>();
         services.AddSingleton<IFixAction, SpeedTestFix>();
+        services.AddSingleton<IFixAction, NetworkResetFix>();
+        services.AddSingleton<IFixAction, PrinterSpoolerResetFix>();
+        services.AddSingleton<IFixAction, RestartExplorerFix>();
+        services.AddSingleton<IFixAction, PowerPlanHighPerformanceFix>();
+        services.AddSingleton<IFixAction, GroupPolicyUpdateFix>();
 
         // Core-Dienste
         services.AddSingleton<DiagnosticEngine>();
