@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using DariaTech.PcDoctor.Checks;
 using DariaTech.PcDoctor.Core;
+using DariaTech.PcDoctor.Core.StressTest;
 using DariaTech.PcDoctor.Fixes;
 using DariaTech.PcDoctor.Infrastructure;
 using DariaTech.PcDoctor.Models;
@@ -84,6 +85,10 @@ public partial class App : Application
         services.AddSingleton<RestorePointService>();
         services.AddSingleton<RepairService>();
         services.AddSingleton<ReportExporter>();
+
+        // Sensorik + Stresstest (Gaming-PCs)
+        services.AddSingleton<ISensorService, LibreHardwareSensorService>();
+        services.AddSingleton<StressTestService>();
 
         // UI
         services.AddSingleton<IDialogService, DialogService>();
