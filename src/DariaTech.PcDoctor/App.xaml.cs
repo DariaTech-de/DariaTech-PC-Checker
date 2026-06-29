@@ -81,6 +81,7 @@ public partial class App : Application
         services.AddSingleton<IFixAction, CheckDiskFix>();
         services.AddSingleton<IFixAction, WinsockResetFix>();
         services.AddSingleton<IFixAction, BatteryReportFix>();
+        services.AddSingleton<IFixAction, SpeedTestFix>();
 
         // Core-Dienste
         services.AddSingleton<DiagnosticEngine>();

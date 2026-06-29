@@ -266,7 +266,7 @@ public sealed partial class MainViewModel : ObservableObject
             "Datenträger – Speicherplatz" => new[] { typeof(ClearTempFilesFix), typeof(CheckDiskFix) },
             "Datenträger – Gesundheit (SMART)" => new[] { typeof(CheckDiskFix) },
             "System & Betriebssystem" => new[] { typeof(SystemFileRepairFix), typeof(ClearTempFilesFix) },
-            "Netzwerk" => new[] { typeof(FlushDnsFix), typeof(WinsockResetFix) },
+            "Netzwerk" => new[] { typeof(SpeedTestFix), typeof(FlushDnsFix), typeof(WinsockResetFix) },
             "Windows-Sicherheit" => new[] { typeof(DefenderQuickScanFix) },
             "Windows-Updates" => new[] { typeof(WindowsUpdateRepairFix) },
             "Akku" => new[] { typeof(BatteryReportFix) },
