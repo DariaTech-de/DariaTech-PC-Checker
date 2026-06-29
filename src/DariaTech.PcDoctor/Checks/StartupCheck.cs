@@ -7,7 +7,7 @@ namespace DariaTech.PcDoctor.Checks;
 /// <summary>
 /// Autostart-Programme (<c>Win32_StartupCommand</c>): Anzahl + erste Einträge.
 /// Mehr als 15 Einträge → Hinweis (Warnung), da viele den Start bremsen.
-/// Jeder gelistete Eintrag erhält eine reversible „Deaktivieren"-Aktion.
+/// Jeder gelistete Eintrag erhält eine reversible „Deaktivieren“-Aktion.
 /// </summary>
 public sealed class StartupCheck : ICheck
 {
@@ -33,7 +33,13 @@ public sealed class StartupCheck : ICheck
             results.Add(new CheckResult(Area, "Anzahl",
                 $"{count} Einträge",
                 count > 15 ? Severity.Warning : Severity.Info,
-                count > 15 ? $"{count} Autostart-Einträge – viele davon bremsen den Start." : null));
+                count > 15 ? $"{count} Autostart-Einträge – viele davon bremsen den Start." : null,
+                Tip: count > 15
+                    ? "So beheben: Nicht benötigte Programme aus dem Autostart nehmen – entweder hier " +
+                      "in der App unten je Eintrag auf „Deaktivieren“ (reversibel), oder in Einstellungen → " +
+                      "Apps → Autostart bzw. im Task-Manager (Strg+Umschalt+Esc) unter „Autostart-Apps“."
+                    : null,
+                OpenTarget: count > 15 ? "ms-settings:startupapps" : null));
 
             foreach (var (name, location, command) in entries.Take(8))
             {

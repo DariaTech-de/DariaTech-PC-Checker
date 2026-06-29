@@ -39,10 +39,18 @@ public sealed class DriverDeviceCheck : ICheck
             {
                 foreach (var (name, code) in problems)
                     results.Add(new CheckResult(Area, "Problem", name, Severity.Warning,
-                        $"Geräte-Manager-Code {code}: {CodeMeaning(code)}"));
+                        $"Geräte-Manager-Code {code}: {CodeMeaning(code)}",
+                        Tip: "So beheben: Geräte-Manager öffnen, das gelb markierte Gerät suchen, " +
+                             "Rechtsklick → „Treiber aktualisieren“. Hilft das nicht: Rechtsklick → " +
+                             "„Gerät deinstallieren“ und den PC neu starten – Windows lädt den Treiber dann neu.",
+                        OpenTarget: "devmgmt.msc"));
                 results.Add(new CheckResult(Area, "Zusammenfassung",
                     $"{problems.Count} Gerät(e) mit Treiberproblem", Severity.Warning,
-                    $"{problems.Count} Gerät(e) mit Treiberproblem im Geräte-Manager – Treiber neu installieren/aktualisieren."));
+                    $"{problems.Count} Gerät(e) mit Treiberproblem im Geräte-Manager – Treiber neu installieren/aktualisieren.",
+                    Tip: "So beheben: Geräte-Manager öffnen und die gelb markierten Geräte prüfen " +
+                         "(Rechtsklick → „Treiber aktualisieren“). Aktuelle Treiber gibt es auch auf der " +
+                         "Hersteller-Website des PCs bzw. der Hardware.",
+                    OpenTarget: "devmgmt.msc"));
             }
 
             return results;

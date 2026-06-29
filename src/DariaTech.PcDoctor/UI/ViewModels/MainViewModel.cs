@@ -144,6 +144,20 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void CloseArea() => SelectedArea = null;
 
+    /// <summary>
+    /// Führt den Nutzer direkt zur betroffenen Windows-Stelle („Hier öffnen").
+    /// Das Sprungziel steht am jeweiligen <see cref="CheckResult.OpenTarget"/>.
+    /// </summary>
+    [RelayCommand]
+    private void OpenLocation(CheckResult? result)
+    {
+        if (result is null || !result.HasOpenTarget) return;
+        if (!SystemLauncher.Open(result.OpenTarget))
+            _dialogs.Inform("Konnte nicht geöffnet werden",
+                "Die zugehörige Windows-Stelle ließ sich nicht automatisch öffnen. " +
+                $"Bitte manuell öffnen:\n{result.OpenTarget}");
+    }
+
     private ReportContext BuildContext() => new()
     {
         CustomerName = CustomerName,

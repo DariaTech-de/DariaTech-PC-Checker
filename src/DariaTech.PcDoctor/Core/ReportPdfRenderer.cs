@@ -99,6 +99,9 @@ public static class ReportPdfRenderer
                                 v.Item().Text(e.Value).FontColor(ColorFor(e.Severity));
                                 if (!string.IsNullOrWhiteSpace(e.Detail))
                                     v.Item().Text(e.Detail!).FontColor("#6B7782").FontSize(8.5f);
+                                if (e.HasTip)
+                                    v.Item().PaddingTop(2).Background("#EEF7F3").Padding(5)
+                                        .Text($"💡 {e.Tip}").FontColor("#1A5E4A").FontSize(8.5f);
                             });
                         });
                     }

@@ -217,6 +217,28 @@
                                                                    TextWrapping="Wrap"
                                                                    Foreground="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
                                                     </Grid>
+
+                                                    <!-- Praxis-Tipp: wie behebe ich es / wo finde ich die Stelle -->
+                                                    <Border Margin="0,6,0,0" CornerRadius="6" Padding="10,8"
+                                                            Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                            Visibility="{Binding HasTip, Converter={StaticResource BoolToVis}}">
+                                                        <StackPanel>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="💡" Margin="0,0,6,0" />
+                                                                <TextBlock Text="Tipp" FontWeight="SemiBold" />
+                                                            </StackPanel>
+                                                            <TextBlock Text="{Binding Tip}" TextWrapping="Wrap"
+                                                                       Margin="0,4,0,0" Opacity="0.9" />
+                                                            <ui:Button Margin="0,8,0,0" Padding="10,5" FontSize="12"
+                                                                       HorizontalAlignment="Left"
+                                                                       Content="➜ Hier öffnen"
+                                                                       ToolTip="Öffnet die passende Windows-Stelle"
+                                                                       Visibility="{Binding HasOpenTarget, Converter={StaticResource BoolToVis}}"
+                                                                       Command="{Binding DataContext.OpenLocationCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                                                       CommandParameter="{Binding}" />
+                                                        </StackPanel>
+                                                    </Border>
+
                                                     <ItemsControl ItemsSource="{Binding Fixes}" Margin="0,4,0,0">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>

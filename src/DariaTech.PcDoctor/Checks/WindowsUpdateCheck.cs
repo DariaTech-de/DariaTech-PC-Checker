@@ -61,7 +61,11 @@ public sealed class WindowsUpdateCheck : ICheck
                 var results = new List<CheckResult>
                 {
                     new(Area, "Ausstehend", $"{count} Update(s)", Severity.Warning,
-                        $"{count} Windows-Update(s) ausstehend – über Einstellungen → Windows Update installieren.")
+                        $"{count} Windows-Update(s) ausstehend – über Einstellungen → Windows Update installieren.",
+                        Tip: "So beheben: Einstellungen → Windows Update öffnen, auf „Nach Updates suchen“ und " +
+                             "dann „Herunterladen & installieren“ klicken. Danach ist oft ein Neustart nötig. " +
+                             "(Start → „Einstellungen“ → „Windows Update“.)",
+                        OpenTarget: "ms-settings:windowsupdate")
                 };
                 // Jeden Update-Titel als eigene Zeile (begrenzt, damit der Bericht lesbar bleibt).
                 foreach (var title in titles.Take(25))

@@ -31,7 +31,14 @@ public sealed class CpuMemoryCheck : ICheck
                     {
                         var load = Convert.ToInt32(cpu["LoadPercentage"]);
                         results.Add(new CheckResult(Area, "CPU-Auslastung", $"{load} %",
-                            load > 90 ? Severity.Warning : Severity.Ok));
+                            load > 90 ? Severity.Warning : Severity.Ok,
+                            Detail: load > 90 ? "CPU dauerhaft stark ausgelastet." : null,
+                            Tip: load > 90
+                                ? "So finden Sie die Ursache: Task-Manager öffnen (Strg+Umschalt+Esc) → " +
+                                  "Reiter „Prozesse“ → nach Spalte „CPU“ sortieren. Hängt ein Programm dauerhaft " +
+                                  "hoch, beenden oder neu starten; danach prüfen, ob es im Autostart nötig ist."
+                                : null,
+                            OpenTarget: load > 90 ? "taskmgr" : null));
                     }
                     break; // erster Prozessor genügt
                 }
@@ -51,7 +58,12 @@ public sealed class CpuMemoryCheck : ICheck
                         var text = $"{totalGb:N1} GB gesamt, {usedPct} % belegt";
                         results.Add(usedPct > 90
                             ? new CheckResult(Area, "Arbeitsspeicher", text, Severity.Warning,
-                                $"Arbeitsspeicher zu {usedPct} % belegt – möglicher Engpass.")
+                                $"Arbeitsspeicher zu {usedPct} % belegt – möglicher Engpass.",
+                                Tip: "So entlasten: Task-Manager öffnen (Strg+Umschalt+Esc) → „Prozesse“ → nach " +
+                                     "Spalte „Arbeitsspeicher“ sortieren und nicht benötigte, speicherhungrige " +
+                                     "Programme (oft viele Browser-Tabs) schließen. Hilft das dauerhaft nicht, ist " +
+                                     "der PC für die Nutzung evtl. mit zu wenig RAM ausgestattet.",
+                                OpenTarget: "taskmgr")
                             : new CheckResult(Area, "Arbeitsspeicher", text, Severity.Ok));
                     }
                     break;
