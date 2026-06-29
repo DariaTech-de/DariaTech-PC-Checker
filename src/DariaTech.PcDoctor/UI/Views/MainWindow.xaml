@@ -34,14 +34,19 @@
         <!-- Titelleiste -->
         <ui:TitleBar Grid.Row="0" Title="DariaTech PC-Doktor" />
 
-        <!-- Navy-Header mit Gesamtampel -->
-        <Border Grid.Row="1" Background="#0D1F3C" Padding="24,18">
+        <!-- Marken-Header (Petrol) mit Logo und Gesamtampel -->
+        <Border Grid.Row="1" Background="#0E3B34" Padding="24,16">
             <Grid>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="DariaTech PC-Doktor" Foreground="White"
-                               FontSize="22" FontWeight="SemiBold" />
-                    <TextBlock Text="Zustandsanalyse &amp; Schnellreparatur für Windows-PCs"
-                               Foreground="#7FA8E6" FontSize="13" Margin="0,2,0,0" />
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="/Assets/logo-mark.png" Width="36" Height="36"
+                           Margin="0,0,14,0" VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="DariaTech PC-Doktor" Foreground="White"
+                                   FontSize="22" FontWeight="SemiBold" />
+                        <TextBlock Text="Zustandsanalyse &amp; Schnellreparatur für Windows-PCs"
+                                   Foreground="#6FE0A8" FontSize="13" Margin="0,2,0,0" />
+                    </StackPanel>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"

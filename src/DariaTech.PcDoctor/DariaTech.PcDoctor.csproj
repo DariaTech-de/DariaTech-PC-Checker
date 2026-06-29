@@ -23,9 +23,14 @@
     <!-- Nur deutsche/englische Ressourcen einbetten (kleinere Ausgabe) -->
     <SatelliteResourceLanguages>de;en</SatelliteResourceLanguages>
 
-    <!-- App-Icon: Datei unter Assets\app.ico ablegen und Zeile aktivieren.
-         <ApplicationIcon>Assets\app.ico</ApplicationIcon> -->
+    <!-- App-Icon (Taskleiste, Fenster, Dateieigenschaften der .exe) -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <!-- Logo-Marke als WPF-Resource für die Fenster-Kopfzeile -->
+  <ItemGroup>
+    <Resource Include="Assets\logo-mark.png" />
+  </ItemGroup>
 
   <!-- Packaging-Standards für `dotnet publish` (siehe build/publish.ps1).
        Greifen nur beim Publish, nicht bei Build/Test. -->

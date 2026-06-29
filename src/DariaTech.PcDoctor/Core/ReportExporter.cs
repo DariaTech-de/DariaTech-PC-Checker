@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using DariaTech.PcDoctor.Models;
 
 namespace DariaTech.PcDoctor.Core;
 
@@ -64,36 +65,56 @@ public sealed class ReportExporter
             sections.Append("</table>");
         }
 
+        var logo = CompanyInfo.LogoSvg(42);
+
         return $$"""
 <!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
 <title>PC-Doktor – {{Enc(computer)}}</title>
 <style>
   body{font-family:Segoe UI,Arial,sans-serif;background:#f4f6f9;color:#1a2433;margin:0;padding:32px;}
   .wrap{max-width:860px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);}
-  header{background:#0d1f3c;color:#fff;padding:24px 32px;}
-  header h1{margin:0;font-size:20px;}
-  header .sub{color:#7fa8e6;font-size:13px;margin-top:4px;}
+  header{background:#0E3B34;color:#fff;padding:20px 32px;display:flex;justify-content:space-between;align-items:center;gap:16px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .mark{line-height:0;display:flex;}
+  .brand .name{font-size:21px;font-weight:700;letter-spacing:.3px;line-height:1;}
+  .brand .tag{font-size:10px;letter-spacing:3px;color:#6FE0A8;text-transform:uppercase;margin-top:3px;}
+  .meta{text-align:right;font-size:12.5px;color:#bfe3d6;}
+  .meta .doc{font-size:15px;color:#fff;font-weight:600;margin-bottom:2px;}
   .content{padding:24px 32px;}
   .ampel{padding:10px 14px;border-radius:6px;margin:6px 0;font-size:14px;}
   .ampel.ok{background:#e6f6ea;color:#1a7f37;border-left:4px solid #2da44e;}
   .ampel.warn{background:#fff8e1;color:#9a6700;border-left:4px solid #e0b000;}
   .ampel.crit{background:#fdecea;color:#b3261e;border-left:4px solid #d32f2f;}
-  h2{font-size:15px;color:#0d1f3c;margin:22px 0 6px;border-bottom:2px solid #eef1f5;padding-bottom:4px;}
+  h2{font-size:15px;color:#0E3B34;margin:22px 0 6px;border-bottom:2px solid #eef1f5;padding-bottom:4px;}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   td{padding:6px 8px;border-bottom:1px solid #f0f2f5;}
   td.label{color:#5a6877;width:230px;}
   td.ok{color:#1a7f37;} td.warn{color:#9a6700;font-weight:600;} td.crit{color:#b3261e;font-weight:600;}
-  footer{padding:16px 32px;color:#8a96a3;font-size:12px;border-top:1px solid #eef1f5;}
+  footer{padding:16px 32px;font-size:12px;border-top:1px solid #eef1f5;background:#f7faf9;}
+  footer .pub{color:#0E3B34;font-size:12.5px;}
+  footer .disclaimer{color:#9aa6b0;margin-top:6px;}
 </style></head>
 <body><div class="wrap">
-<header><h1>PC-Doktor</h1>
-<div class="sub">{{Enc(computer)}} &middot; erstellt am {{now:dd.MM.yyyy HH:mm}} &middot; DariaTech IT-Systemhaus</div></header>
+<header>
+  <div class="brand">
+    <span class="mark">{{logo}}</span>
+    <div><div class="name">DariaTech</div><div class="tag">IT-Systemhaus</div></div>
+  </div>
+  <div class="meta">
+    <div class="doc">PC-Doktor &middot; Kundenbericht</div>
+    <div>{{Enc(computer)}} &middot; {{now:dd.MM.yyyy HH:mm}} Uhr</div>
+  </div>
+</header>
 <div class="content">
 <h2>Zusammenfassung</h2>
 {{summary}}
 {{sections}}
 </div>
-<footer>Automatisch erstellt mit dem DariaTech PC-Doktor. Werte ohne Gewähr.</footer>
+<footer>
+  <div class="pub"><strong>{{Enc(CompanyInfo.Name)}}</strong> &middot; {{Enc(CompanyInfo.Street)}} &middot; {{Enc(CompanyInfo.City)}}</div>
+  <div class="pub">Telefon: {{Enc(CompanyInfo.Phone)}} &middot; E-Mail: {{Enc(CompanyInfo.Email)}}</div>
+  <div class="disclaimer">Automatisch erstellt mit dem DariaTech PC-Doktor. Werte ohne Gewähr.</div>
+</footer>
 </div></body></html>
 """;
     }
