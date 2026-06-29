@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Management;
 using DariaTech.PcDoctor.Core;
 using DariaTech.PcDoctor.Models;
 using LibreHardwareMonitor.Hardware;
@@ -28,7 +30,9 @@ public sealed class LibreHardwareSensorService : ISensorService
             lock (_gate)
             {
                 EnsureInitialized();
-                return _computer is not null;
+                // Verfügbar, wenn LibreHardwareMonitor läuft ODER zumindest die
+                // ACPI-Thermalzone eine CPU-Temperatur liefert (z. B. HP EliteBook).
+                return _computer is not null || TryReadAcpiCpuTemp() is not null;
             }
         }
     }
@@ -38,20 +42,60 @@ public sealed class LibreHardwareSensorService : ISensorService
         lock (_gate)
         {
             EnsureInitialized();
-            if (_computer is null) return Array.Empty<SensorReading>();
-
             var readings = new List<SensorReading>();
-            try
+
+            if (_computer is not null)
             {
-                _computer.Accept(_visitor);
-                foreach (var hw in _computer.Hardware)
-                    Collect(hw, readings);
+                try
+                {
+                    _computer.Accept(_visitor);
+                    foreach (var hw in _computer.Hardware)
+                        Collect(hw, readings);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Sensorabfrage fehlgeschlagen");
+                }
             }
-            catch (Exception ex)
-            {
-                _log.LogWarning(ex, "Sensorabfrage fehlgeschlagen");
-            }
+
+            // Fallback: liefert der Treiber keine CPU-Temperatur, ACPI-Thermalzone nutzen.
+            var hasCpuTemp = readings.Any(r =>
+                r.Kind == SensorKind.Temperature &&
+                r.HardwareType.Equals("Cpu", StringComparison.OrdinalIgnoreCase));
+            if (!hasCpuTemp && TryReadAcpiCpuTemp() is double acpi)
+                readings.Add(new SensorReading("ACPI-Thermalzone", "Cpu", "CPU (ACPI)",
+                    SensorKind.Temperature, acpi));
+
             return readings;
+        }
+    }
+
+    /// <summary>
+    /// Liest die CPU-/System-Temperatur über <c>MSAcpi_ThermalZoneTemperature</c>
+    /// (root\wmi). Funktioniert auf vielen Geräten auch ohne LHM-Treiber.
+    /// </summary>
+    private double? TryReadAcpiCpuTemp()
+    {
+        try
+        {
+            var scope = new ManagementScope(@"\\.\root\wmi");
+            var query = new ObjectQuery("SELECT CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
+            using var searcher = new ManagementObjectSearcher(scope, query);
+
+            double? best = null;
+            foreach (ManagementBaseObject obj in searcher.Get())
+            {
+                if (obj["CurrentTemperature"] is null) continue;
+                // Wert in Zehntel-Kelvin -> °C.
+                var celsius = Convert.ToDouble(obj["CurrentTemperature"]) / 10.0 - 273.15;
+                if (celsius is > 0 and < 130 && (best is null || celsius > best))
+                    best = celsius;
+            }
+            return best;
+        }
+        catch
+        {
+            return null;
         }
     }
 

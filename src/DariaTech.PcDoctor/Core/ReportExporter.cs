@@ -47,48 +47,68 @@ public sealed class ReportExporter
         DateTime? timestamp = null)
     {
         var html = Export(results, context, targetFolder, timestamp);
-        var edge = FindEdge();
-        if (edge is null) return null;
+        var targetPdf = Path.ChangeExtension(html, ".pdf");
 
-        var pdf = Path.ChangeExtension(html, ".pdf");
-        try
-        {
-            var psi = new ProcessStartInfo(edge)
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            psi.ArgumentList.Add("--headless=new");
-            psi.ArgumentList.Add("--disable-gpu");
-            psi.ArgumentList.Add("--no-pdf-header-footer");
-            psi.ArgumentList.Add($"--print-to-pdf={pdf}");
-            psi.ArgumentList.Add(new Uri(html).AbsoluteUri);
+        // Edge bevorzugt, sonst Chrome.
+        foreach (var browser in FindBrowsers())
+            if (TryPrintPdf(browser, html, targetPdf))
+                return targetPdf;
 
-            using var proc = Process.Start(psi);
-            if (proc is null) return null;
-            if (!proc.WaitForExit(60_000))
-            {
-                try { proc.Kill(true); } catch { /* egal */ }
-                return null;
-            }
-            return File.Exists(pdf) ? pdf : null;
-        }
-        catch
-        {
-            return null;
-        }
+        return null;
     }
 
-    private static string? FindEdge()
+    private static bool TryPrintPdf(string browser, string htmlPath, string targetPdf)
     {
+        // In ein Temp-Verzeichnis ohne Sonderzeichen drucken (OneDrive-Desktop hat
+        // Leerzeichen) und ein eigenes Profil nutzen, damit ein parallel laufender –
+        // ggf. nicht-elevierter – Browser den Headless-Druck nicht blockiert.
+        var temp = Path.Combine(Path.GetTempPath(), "DariaTech-Pdf-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temp);
+        var tempPdf = Path.Combine(temp, "bericht.pdf");
+        try
+        {
+            var psi = new ProcessStartInfo(browser) { UseShellExecute = false, CreateNoWindow = true };
+            psi.ArgumentList.Add("--headless=new");
+            psi.ArgumentList.Add("--disable-gpu");
+            psi.ArgumentList.Add("--no-first-run");
+            psi.ArgumentList.Add("--no-pdf-header-footer");
+            psi.ArgumentList.Add($"--user-data-dir={temp}");
+            psi.ArgumentList.Add($"--print-to-pdf={tempPdf}");
+            psi.ArgumentList.Add(new Uri(htmlPath).AbsoluteUri);
+
+            using (var proc = Process.Start(psi))
+            {
+                if (proc is null) return false;
+                if (!proc.WaitForExit(60_000))
+                {
+                    try { proc.Kill(true); } catch { /* egal */ }
+                    return false;
+                }
+            }
+
+            if (!File.Exists(tempPdf) || new FileInfo(tempPdf).Length == 0) return false;
+            File.Copy(tempPdf, targetPdf, overwrite: true);
+            return true;
+        }
+        catch { return false; }
+        finally { try { Directory.Delete(temp, recursive: true); } catch { /* egal */ } }
+    }
+
+    private static IEnumerable<string> FindBrowsers()
+    {
+        var pf = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var pf86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
         var candidates = new[]
         {
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                "Microsoft", "Edge", "Application", "msedge.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                "Microsoft", "Edge", "Application", "msedge.exe")
+            Path.Combine(pf86, "Microsoft", "Edge", "Application", "msedge.exe"),
+            Path.Combine(pf, "Microsoft", "Edge", "Application", "msedge.exe"),
+            Path.Combine(pf, "Google", "Chrome", "Application", "chrome.exe"),
+            Path.Combine(pf86, "Google", "Chrome", "Application", "chrome.exe"),
+            Path.Combine(local, "Google", "Chrome", "Application", "chrome.exe")
         };
-        return candidates.FirstOrDefault(File.Exists);
+        return candidates.Where(File.Exists);
     }
 
     /// <summary>Gesundheits-Score 0–100 aus den Befunden (für Marketing/Übergabe).</summary>
