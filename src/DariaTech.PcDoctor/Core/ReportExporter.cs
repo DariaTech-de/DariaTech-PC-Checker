@@ -1,5 +1,4 @@
 using System.IO;
-using System.Net;
 using System.Text;
 
 namespace DariaTech.PcDoctor.Core;
@@ -112,5 +111,11 @@ public sealed class ReportExporter
         _ => "info"
     };
 
-    private static string Enc(string? text) => WebUtility.HtmlEncode(text ?? string.Empty);
+    // Wie der PowerShell-Prototyp: nur &, &lt;, &gt; ersetzen (Reihenfolge: & zuerst).
+    // So bleiben Umlaute und Sonderzeichen als lesbares UTF-8 im Bericht erhalten.
+    private static string Enc(string? text)
+        => (text ?? string.Empty)
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;");
 }
