@@ -27,12 +27,25 @@ Bereits umgesetzt:
   reparieren, Datenträger prüfen (chkdsk, schreibgeschützt), DNS-Cache leeren,
   Winsock-Reset, Defender-Schnellscan und reversibles Deaktivieren einzelner
   Autostart-Einträge. Nach einem Fix wird der Bereich neu geprüft.
-- **HTML-Bericht:** `ReportExporter` im Stil des PowerShell-Berichts.
-- **Packaging:** UAC-Manifest, Versions-/Herstellerinfo und Build-Skripte
-  (`build/publish.ps1`, `build/sign.ps1`) für die portable Single-File-`.exe`.
-- **Tests:** xUnit für Severity-Regeln, Engine-Robustheit und Bericht.
+- **Gaming & Stresstest (eigener Tab):** Live-Tachos (CPU-/GPU-Temp, Last,
+  Lüfter) und Temperaturverlauf über LibreHardwareMonitor; Stresstest mit
+  Abschlussbericht (Throttling/Stabilität), **Stopp-Button** und automatischer
+  **Thermo-Notabschaltung**.
+- **Kundenbericht (Übergabe):** DariaTech-Branding (Logo, Herausgeberdaten),
+  Kundendaten-Kopf, Gesundheits-Score; Export als **HTML und PDF**.
+- **Field-Tech:** SMART-Detailwerte (Restlebensdauer/TBW/Temperatur),
+  Akku-Report (`powercfg`), Internet-Speedtest, **Kundenverlauf** (Tab „Verlauf",
+  portabel neben der App gespeichert).
+- **Packaging:** App-Icon, UAC-Manifest, Versions-/Herstellerinfo, Build-Skripte
+  (`build/publish.ps1`, `build/sign.ps1`) und ein **Release-Workflow**
+  (lädt die fertige `.exe` als Artefakt hoch). Siehe [`RELEASE.md`](./RELEASE.md).
+- **Tests:** xUnit für Severity-/Score-Regeln, Engine-Robustheit, Bericht und
+  Stresstest-Auswertung.
 
-> Hinweis: WPF/`net8.0-windows` lässt sich nur unter **Windows** bauen.
+> **Hinweise:** WPF/`net8.0-windows` lässt sich nur unter **Windows** bauen.
+> Für die Gaming-Sensorik wird ein Kernel-Treiber geladen (LibreHardwareMonitor);
+> unsignierte Builds können daher SmartScreen-/Antivirus-Warnungen auslösen –
+> vor Auslieferung **signieren** (siehe `RELEASE.md`).
 
 ## Entwicklung
 
