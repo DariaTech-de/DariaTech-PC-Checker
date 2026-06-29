@@ -50,8 +50,8 @@ public sealed class BatteryCheck : ICheck
                     results.Add(wear > 40
                         ? new CheckResult(Area, "Akku-Zustand", text, Severity.Warning,
                             $"Akku zu {wear} % verschlissen – Tausch könnte sinnvoll sein.",
-                            Tip: "Ein Akkutausch bringt die Laufzeit zurück. Für Details unten „Akkubericht “ +
-                                 "erstellen" nutzen (zeigt Verlauf und Kapazität). Schonung: den Akku möglichst " +
+                            Tip: "Ein Akkutausch bringt die Laufzeit zurück. Für Details unten den " +
+                                 "Akkubericht erstellen (zeigt Verlauf und Kapazität). Schonung: den Akku möglichst " +
                                  "nicht dauerhaft bei 100 % am Netz lassen und Tiefentladung vermeiden.")
                         : new CheckResult(Area, "Akku-Zustand", text, Severity.Ok));
                     return results;
