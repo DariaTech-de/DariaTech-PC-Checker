@@ -12,8 +12,13 @@ public sealed class ClearTempFilesFix : IFixAction
 {
     public string Title => "Temporäre Dateien leeren";
     public string Description =>
-        "Löscht den Inhalt der Temp-Ordner (%temp% und Windows\\Temp). " +
-        "Aktuell genutzte Dateien werden übersprungen.";
+        "Entfernt nur temporäre Hilfsdateien, die Windows und Programme während der " +
+        "Arbeit anlegen und danach nicht mehr brauchen (Ordner %temp% und Windows\\Temp): " +
+        "Installations- und Update-Reste, Zwischendateien, Miniaturbild- und Programm-Caches. " +
+        "Persönliche Daten – Dokumente, Bilder, E-Mails, Browser-Passwörter oder Lesezeichen – " +
+        "liegen NICHT in diesen Ordnern und werden nicht angefasst. Es entsteht also kein " +
+        "Datenverlust; höchstens startet ein Programm beim nächsten Mal einmalig etwas langsamer, " +
+        "weil es seinen Cache neu aufbaut. Aktuell genutzte Dateien werden automatisch übersprungen.";
     public bool RequiresRestorePoint => false;
     public bool IsReversible => false;
 

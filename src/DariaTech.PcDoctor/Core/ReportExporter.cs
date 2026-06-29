@@ -36,9 +36,8 @@ public sealed class ReportExporter
     }
 
     /// <summary>
-    /// Erzeugt zusätzlich ein PDF, indem der HTML-Bericht über Microsoft Edge
-    /// (headless) gedruckt wird – ohne externe Bibliothek. Liefert den PDF-Pfad
-    /// oder <c>null</c>, falls Edge nicht gefunden wurde bzw. der Druck scheiterte.
+    /// Erzeugt den Bericht direkt als PDF (über QuestPDF, ohne Browser). Liefert
+    /// den PDF-Pfad oder <c>null</c>, falls das Rendern fehlschlug.
     /// </summary>
     public string? ExportPdf(
         IReadOnlyList<CheckResult> results,
@@ -46,69 +45,23 @@ public sealed class ReportExporter
         string? targetFolder = null,
         DateTime? timestamp = null)
     {
-        var html = Export(results, context, targetFolder, timestamp);
-        var targetPdf = Path.ChangeExtension(html, ".pdf");
+        var folder = targetFolder
+            ?? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        Directory.CreateDirectory(folder);
 
-        // Edge bevorzugt, sonst Chrome.
-        foreach (var browser in FindBrowsers())
-            if (TryPrintPdf(browser, html, targetPdf))
-                return targetPdf;
+        var now = timestamp ?? DateTime.Now;
+        var computer = Environment.MachineName;
+        var pdf = Path.Combine(folder, $"PC-Doktor_{computer}_{now:yyyy-MM-dd_HHmm}.pdf");
 
-        return null;
-    }
-
-    private static bool TryPrintPdf(string browser, string htmlPath, string targetPdf)
-    {
-        // In ein Temp-Verzeichnis ohne Sonderzeichen drucken (OneDrive-Desktop hat
-        // Leerzeichen) und ein eigenes Profil nutzen, damit ein parallel laufender –
-        // ggf. nicht-elevierter – Browser den Headless-Druck nicht blockiert.
-        var temp = Path.Combine(Path.GetTempPath(), "DariaTech-Pdf-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(temp);
-        var tempPdf = Path.Combine(temp, "bericht.pdf");
         try
         {
-            var psi = new ProcessStartInfo(browser) { UseShellExecute = false, CreateNoWindow = true };
-            psi.ArgumentList.Add("--headless=new");
-            psi.ArgumentList.Add("--disable-gpu");
-            psi.ArgumentList.Add("--no-first-run");
-            psi.ArgumentList.Add("--no-pdf-header-footer");
-            psi.ArgumentList.Add($"--user-data-dir={temp}");
-            psi.ArgumentList.Add($"--print-to-pdf={tempPdf}");
-            psi.ArgumentList.Add(new Uri(htmlPath).AbsoluteUri);
-
-            using (var proc = Process.Start(psi))
-            {
-                if (proc is null) return false;
-                if (!proc.WaitForExit(60_000))
-                {
-                    try { proc.Kill(true); } catch { /* egal */ }
-                    return false;
-                }
-            }
-
-            if (!File.Exists(tempPdf) || new FileInfo(tempPdf).Length == 0) return false;
-            File.Copy(tempPdf, targetPdf, overwrite: true);
-            return true;
+            ReportPdfRenderer.Render(results, context, computer, now, pdf);
+            return File.Exists(pdf) ? pdf : null;
         }
-        catch { return false; }
-        finally { try { Directory.Delete(temp, recursive: true); } catch { /* egal */ } }
-    }
-
-    private static IEnumerable<string> FindBrowsers()
-    {
-        var pf = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-        var pf86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-
-        var candidates = new[]
+        catch
         {
-            Path.Combine(pf86, "Microsoft", "Edge", "Application", "msedge.exe"),
-            Path.Combine(pf, "Microsoft", "Edge", "Application", "msedge.exe"),
-            Path.Combine(pf, "Google", "Chrome", "Application", "chrome.exe"),
-            Path.Combine(pf86, "Google", "Chrome", "Application", "chrome.exe"),
-            Path.Combine(local, "Google", "Chrome", "Application", "chrome.exe")
-        };
-        return candidates.Where(File.Exists);
+            return null;
+        }
     }
 
     /// <summary>Gesundheits-Score 0–100 aus den Befunden (für Marketing/Übergabe).</summary>

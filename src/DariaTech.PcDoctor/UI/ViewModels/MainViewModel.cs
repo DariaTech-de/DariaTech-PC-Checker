@@ -140,6 +140,10 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void SelectArea(AreaResultViewModel? area) => SelectedArea = area;
 
+    /// <summary>Schließt das Detail-Popup (Klick neben das Popup oder auf „×").</summary>
+    [RelayCommand]
+    private void CloseArea() => SelectedArea = null;
+
     private ReportContext BuildContext() => new()
     {
         CustomerName = CustomerName,
@@ -183,7 +187,7 @@ public sealed partial class MainViewModel : ObservableObject
                     // Edge nicht gefunden – HTML als Ersatz erzeugen.
                     path = _reportExporter.Export(_lastResults, context);
                     _dialogs.Inform("PDF nicht möglich",
-                        "Microsoft Edge wurde nicht gefunden – es wurde stattdessen die HTML-Datei erstellt:\n" + path);
+                        "Das PDF konnte nicht erstellt werden – es wurde stattdessen die HTML-Datei erstellt:\n" + path);
                     OpenFile(path);
                     return;
                 }
