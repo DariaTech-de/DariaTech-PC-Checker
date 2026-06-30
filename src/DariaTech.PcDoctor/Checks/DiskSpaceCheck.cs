@@ -48,7 +48,14 @@ public sealed class DiskSpaceCheck : ICheck
                 _ => null
             };
 
-            results.Add(new CheckResult(Area, $"Laufwerk {id}", value, severity, detail));
+            string? tip = severity == Severity.Ok ? null
+                : "So schaffen Sie Platz: unten „Temporäre Dateien leeren“ und „App-Cache leeren“ nutzen, " +
+                  "im Windows-Tool „Datenträgerbereinigung“ aufräumen, nicht genutzte Programme deinstallieren " +
+                  "und große Dateien (Videos, ISO-Abbilder) auf eine externe Platte auslagern.";
+
+            results.Add(new CheckResult(Area, $"Laufwerk {id}", value, severity, detail,
+                Tip: tip,
+                OpenTarget: tip is null ? null : "cleanmgr"));
         }
 
         return Task.FromResult<IReadOnlyList<CheckResult>>(results);

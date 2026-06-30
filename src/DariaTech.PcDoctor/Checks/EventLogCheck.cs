@@ -4,7 +4,7 @@ using DariaTech.PcDoctor.Core;
 namespace DariaTech.PcDoctor.Checks;
 
 /// <summary>
-/// Ereignisprotokoll: zählt kritische Fehler (Level 1–2) im Log „System" der
+/// Ereignisprotokoll: zählt kritische Fehler (Level 1–2) im Log „System“ der
 /// letzten 7 Tage, listet die häufigsten Quellen und weist auf unerwartete
 /// Abschaltungen hin (Kernel-Power, Event-ID 41).
 /// </summary>
@@ -59,7 +59,13 @@ public sealed class EventLogCheck : ICheck
                 results.Add(new CheckResult(Area, "Kritische Fehler",
                     $"{total} Einträge",
                     total > 20 ? Severity.Warning : Severity.Info,
-                    total > 20 ? $"Auffällig viele Systemfehler ({total} in 7 Tagen)." : null));
+                    total > 20 ? $"Auffällig viele Systemfehler ({total} in 7 Tagen)." : null,
+                    Tip: total > 20
+                        ? "So finden: Ereignisanzeige öffnen → links „Windows-Protokolle“ → „System“ und nach " +
+                          "Einträgen der Ebene „Fehler“/„Kritisch“ schauen. Die Quelle (siehe Liste unten) " +
+                          "zeigt, welche Komponente betroffen ist."
+                        : null,
+                    OpenTarget: total > 20 ? "eventvwr.msc" : null));
 
                 foreach (var kv in providerCounts.OrderByDescending(k => k.Value).Take(5))
                     results.Add(new CheckResult(Area, $" – {kv.Key}", $"{kv.Value}x", Severity.Info));
@@ -67,7 +73,12 @@ public sealed class EventLogCheck : ICheck
                 if (kernelPower41 > 0)
                     results.Add(new CheckResult(Area, "Unerwartete Abschaltung",
                         $"{kernelPower41}x (Kernel-Power 41)", Severity.Warning,
-                        $"{kernelPower41}x unerwartete Abschaltung (Kernel-Power 41) – Netzteil/Treiber prüfen."));
+                        $"{kernelPower41}x unerwartete Abschaltung (Kernel-Power 41) – Netzteil/Treiber prüfen.",
+                        Tip: "Ursachen sind meist Strom-/Akku-Probleme, Überhitzung oder ein instabiler Treiber. " +
+                             "Prüfen: Netzteil/Akku und Steckverbindungen, Lüftung reinigen, im Tab " +
+                             "„Gaming & Stresstest“ die Temperaturen beobachten. Tritt es nur beim Spielen auf, " +
+                             "deutet das auf Überhitzung oder ein zu schwaches Netzteil hin.",
+                        OpenTarget: "eventvwr.msc"));
             }
             catch (OperationCanceledException) { throw; }
             catch

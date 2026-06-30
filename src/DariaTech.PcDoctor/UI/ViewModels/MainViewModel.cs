@@ -140,6 +140,24 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void SelectArea(AreaResultViewModel? area) => SelectedArea = area;
 
+    /// <summary>Schließt das Detail-Popup (Klick neben das Popup oder auf „×").</summary>
+    [RelayCommand]
+    private void CloseArea() => SelectedArea = null;
+
+    /// <summary>
+    /// Führt den Nutzer direkt zur betroffenen Windows-Stelle („Hier öffnen").
+    /// Das Sprungziel steht am jeweiligen <see cref="CheckResult.OpenTarget"/>.
+    /// </summary>
+    [RelayCommand]
+    private void OpenLocation(CheckResult? result)
+    {
+        if (result is null || !result.HasOpenTarget) return;
+        if (!SystemLauncher.Open(result.OpenTarget))
+            _dialogs.Inform("Konnte nicht geöffnet werden",
+                "Die zugehörige Windows-Stelle ließ sich nicht automatisch öffnen. " +
+                $"Bitte manuell öffnen:\n{result.OpenTarget}");
+    }
+
     private ReportContext BuildContext() => new()
     {
         CustomerName = CustomerName,
@@ -183,7 +201,7 @@ public sealed partial class MainViewModel : ObservableObject
                     // Edge nicht gefunden – HTML als Ersatz erzeugen.
                     path = _reportExporter.Export(_lastResults, context);
                     _dialogs.Inform("PDF nicht möglich",
-                        "Microsoft Edge wurde nicht gefunden – es wurde stattdessen die HTML-Datei erstellt:\n" + path);
+                        "Das PDF konnte nicht erstellt werden – es wurde stattdessen die HTML-Datei erstellt:\n" + path);
                     OpenFile(path);
                     return;
                 }

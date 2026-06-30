@@ -7,7 +7,7 @@ namespace DariaTech.PcDoctor.Checks;
 /// Datenträger-Gesundheit (SMART): liest <c>MSFT_PhysicalDisk.HealthStatus</c>
 /// (root\Microsoft\Windows\Storage) und zusätzlich die klassische
 /// Ausfallvorhersage <c>MSStorageDriver_FailurePredictStatus</c> (root\wmi).
-/// HealthStatus „Warning" → Warnung, alles andere außer „Healthy" → Kritisch;
+/// HealthStatus „Warning“ → Warnung, alles andere außer „Healthy“ → Kritisch;
 /// PredictFailure = true → Kritisch (sofort Backup/Tausch).
 /// </summary>
 public sealed class SmartHealthCheck : ICheck
@@ -38,9 +38,15 @@ public sealed class SmartHealthCheck : ICheck
                     {
                         "Healthy" => new CheckResult(Area, "Status: OK", text, Severity.Ok),
                         "Warning" => new CheckResult(Area, "Status: WARNUNG", text, Severity.Warning,
-                            $"Datenträger „{name}“ meldet SMART-Warnung – Backup prüfen."),
+                            $"Datenträger „{name}“ meldet SMART-Warnung – Backup prüfen.",
+                            Tip: "Jetzt wichtig: zuerst alle wichtigen Daten sichern (externe Platte oder Cloud). " +
+                                 "Eine SMART-Warnung ist oft der erste Hinweis auf einen baldigen Ausfall. " +
+                                 "Bei einer schwächelnden Platte gilt: erst klonen (Tab „Klonen“), dann tauschen."),
                         _ => new CheckResult(Area, $"Status: {health}", text, Severity.Critical,
-                            $"Datenträger „{name}“: {health} – möglicher Defekt, sofort Backup!")
+                            $"Datenträger „{name}“: {health} – möglicher Defekt, sofort Backup!",
+                            Tip: "Sofort handeln: alle wichtigen Daten umgehend sichern und den Datenträger " +
+                                 "ersetzen. Ist es das Systemlaufwerk, im Tab „Klonen“ 1:1 auf eine neue SSD/HDD " +
+                                 "klonen, bevor es ganz ausfällt.")
                     });
                 }
             }
@@ -64,7 +70,9 @@ public sealed class SmartHealthCheck : ICheck
                     if (p["PredictFailure"] is bool fail && fail)
                         results.Add(new CheckResult(Area, "Ausfallvorhersage",
                             $"FAIL ({p["InstanceName"]})", Severity.Critical,
-                            "SMART sagt baldigen Ausfall voraus – Datenträger umgehend ersetzen!"));
+                            "SMART sagt baldigen Ausfall voraus – Datenträger umgehend ersetzen!",
+                            Tip: "Nicht warten: zuerst die Daten sichern, dann den Datenträger tauschen. " +
+                                 "Beim Systemlaufwerk vorher im Tab „Klonen“ 1:1 auf einen neuen Datenträger klonen."));
                 }
             }
             catch { /* Namespace nicht auf jedem System vorhanden – kein Fehler */ }

@@ -30,7 +30,12 @@ public sealed class SecurityCheck : ICheck
                     results.Add(realtime
                         ? new CheckResult(Area, "Echtzeitschutz", "aktiv", Severity.Ok)
                         : new CheckResult(Area, "Echtzeitschutz", "AUS", Severity.Critical,
-                            "Defender-Echtzeitschutz ist deaktiviert."));
+                            "Defender-Echtzeitschutz ist deaktiviert.",
+                            Tip: "So beheben: Windows-Sicherheit öffnen → „Viren- & Bedrohungsschutz“ → " +
+                                 "„Einstellungen verwalten“ und „Echtzeitschutz“ einschalten. " +
+                                 "Ist ein anderer Virenschutz (z. B. Avast, Norton) installiert, übernimmt dieser " +
+                                 "den Schutz – dann ist die Meldung in Ordnung.",
+                            OpenTarget: "windowsdefender://threat"));
 
                     var updated = ToDate(mp["AntivirusSignatureLastUpdated"]);
                     if (updated is not null)
@@ -38,7 +43,10 @@ public sealed class SecurityCheck : ICheck
                         var age = (DateTime.Now - updated.Value).Days;
                         results.Add(age > 7
                             ? new CheckResult(Area, "Signaturen", $"{age} Tage alt", Severity.Warning,
-                                $"Virensignaturen {age} Tage alt – aktualisieren.")
+                                $"Virensignaturen {age} Tage alt – aktualisieren.",
+                                Tip: "So beheben: Windows-Sicherheit öffnen → „Viren- & Bedrohungsschutz“ → " +
+                                     "unter „Schutzupdates“ auf „Nach Updates suchen“ klicken.",
+                                OpenTarget: "windowsdefender://threat")
                             : new CheckResult(Area, "Signaturen", $"aktuell ({age} Tage)", Severity.Ok));
                     }
                     break;

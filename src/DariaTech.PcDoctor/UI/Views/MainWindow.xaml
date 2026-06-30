@@ -123,19 +123,14 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Inhalt: Kacheln + Detail -->
+                    <!-- Inhalt: Kacheln (volle Breite) -->
                     <Grid Grid.Row="1" Margin="16,8,16,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Column="0" Text="Starte einen Scan, um den Zustand des PCs zu sehen."
+                        <TextBlock Text="Starte einen Scan, um den Zustand des PCs zu sehen."
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    FontSize="15" Foreground="Gray"
                                    Visibility="{Binding HasResults, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
 
-                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto"
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
                                       Visibility="{Binding HasResults, Converter={StaticResource BoolToVis}}">
                             <ItemsControl ItemsSource="{Binding Areas}" Margin="8">
                                 <ItemsControl.ItemsPanel>
@@ -172,15 +167,26 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
+                    </Grid>
 
-                        <Border Grid.Column="1" Width="380" Margin="8,8,0,8"
-                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    <!-- Detail-Popup: erscheint über den Kacheln; Klick daneben schließt es -->
+                    <Grid Grid.Row="0" Grid.RowSpan="2" x:Name="AreaPopupOverlay"
+                          Background="#88000000"
+                          Visibility="{Binding SelectedArea, Converter={StaticResource NullToVis}}"
+                          MouseDown="OnAreaPopupBackdropMouseDown">
+                        <Border Width="440" MaxHeight="560" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Background="{DynamicResource ApplicationBackgroundBrush}"
                                 BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1"
-                                CornerRadius="8" Padding="16"
-                                Visibility="{Binding SelectedArea, Converter={StaticResource NullToVis}}">
+                                CornerRadius="10" Padding="20">
                             <DockPanel DataContext="{Binding SelectedArea}">
-                                <TextBlock DockPanel.Dock="Top" Text="{Binding Area}"
-                                           FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <Grid DockPanel.Dock="Top">
+                                    <TextBlock Text="{Binding Area}" Margin="0,0,32,0"
+                                               FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <ui:Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                                               Padding="6,2" FontSize="14" Content="✕"
+                                               ToolTip="Schließen"
+                                               Command="{Binding DataContext.CloseAreaCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}" />
+                                </Grid>
                                 <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0"
                                             Visibility="{Binding HasFixes, Converter={StaticResource BoolToVis}}">
                                     <TextBlock Text="Reparaturen" FontWeight="SemiBold" Margin="0,0,0,6" />
@@ -211,6 +217,28 @@
                                                                    TextWrapping="Wrap"
                                                                    Foreground="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
                                                     </Grid>
+
+                                                    <!-- Praxis-Tipp: wie behebe ich es / wo finde ich die Stelle -->
+                                                    <Border Margin="0,6,0,0" CornerRadius="6" Padding="10,8"
+                                                            Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                            Visibility="{Binding HasTip, Converter={StaticResource BoolToVis}}">
+                                                        <StackPanel>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="💡" Margin="0,0,6,0" />
+                                                                <TextBlock Text="Tipp" FontWeight="SemiBold" />
+                                                            </StackPanel>
+                                                            <TextBlock Text="{Binding Tip}" TextWrapping="Wrap"
+                                                                       Margin="0,4,0,0" Opacity="0.9" />
+                                                            <ui:Button Margin="0,8,0,0" Padding="10,5" FontSize="12"
+                                                                       HorizontalAlignment="Left"
+                                                                       Content="➜ Hier öffnen"
+                                                                       ToolTip="Öffnet die passende Windows-Stelle"
+                                                                       Visibility="{Binding HasOpenTarget, Converter={StaticResource BoolToVis}}"
+                                                                       Command="{Binding DataContext.OpenLocationCommand, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+                                                                       CommandParameter="{Binding}" />
+                                                        </StackPanel>
+                                                    </Border>
+
                                                     <ItemsControl ItemsSource="{Binding Fixes}" Margin="0,4,0,0">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>

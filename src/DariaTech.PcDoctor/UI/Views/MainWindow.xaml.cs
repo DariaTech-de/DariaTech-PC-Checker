@@ -25,4 +25,14 @@ public partial class MainWindow : FluentWindow
             _ = vm.Gaming.EnsureMonitoringAsync();
         }
     }
+
+    /// <summary>
+    /// Schließt das Detail-Popup, wenn der Nutzer auf den abgedunkelten Bereich
+    /// neben dem Popup klickt (nicht auf das Popup selbst).
+    /// </summary>
+    private void OnAreaPopupBackdropMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (ReferenceEquals(e.OriginalSource, sender) && DataContext is MainViewModel vm)
+            vm.CloseAreaCommand.Execute(null);
+    }
 }
