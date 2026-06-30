@@ -69,6 +69,7 @@ public static class ReportPdfRenderer
                         HandoverRow(h, "Auftrag", context.OrderNumber);
                         HandoverRow(h, "Techniker", context.Technician);
                         HandoverRow(h, "Datum", now.ToString("dd.MM.yyyy"));
+                        HandoverRow(h, "Notizen", context.Notes);
                     });
                 }
 
