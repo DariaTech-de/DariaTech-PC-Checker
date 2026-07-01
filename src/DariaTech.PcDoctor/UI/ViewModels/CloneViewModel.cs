@@ -31,9 +31,21 @@ public sealed partial class CloneViewModel : ObservableObject
         _log = log;
         var engine = _clone.FindEngine();
         EngineFound = engine.Found;
+        EngineMissing = !engine.Found;
+        var toolsDir = System.IO.Path.GetDirectoryName(engine.Path) ?? "tools";
         EngineStatus = engine.Found
             ? $"Klon-Engine gefunden: {engine.Path}"
             : $"ddrescue.exe fehlt – bitte nach {engine.Path} legen. Ohne Engine ist kein Klonen möglich.";
+        EngineHelp =
+            "GNU ddrescue gibt es nicht als fertigen Einzel-Download für Windows. So besorgst du es " +
+            "lizenzsauber über Cygwin:\n\n" +
+            "1. Cygwin-Installer von cygwin.com herunterladen (Button unten) und starten.\n" +
+            "2. Im Paket-Schritt nach „gddrescue“ suchen und zur Installation auswählen.\n" +
+            "3. Nach der Installation beide Dateien aus C:\\cygwin64\\bin kopieren:\n" +
+            $"   • ddrescue.exe  →  {toolsDir}\\ddrescue.exe\n" +
+            $"   • cygwin1.dll   →  {toolsDir}\\cygwin1.dll  (wird von ddrescue.exe benötigt)\n\n" +
+            "Alternativen ohne ddrescue: Clonezilla (bootfähiger USB-Stick) oder eine " +
+            "Klon-Dockingstation, die offline auf Knopfdruck klont.";
     }
 
     public ObservableCollection<PhysicalDisk> Disks { get; } = new();
@@ -47,9 +59,15 @@ public sealed partial class CloneViewModel : ObservableObject
     [ObservableProperty] private bool _isCloning;
     [ObservableProperty] private string _cloneStatus = string.Empty;
     [ObservableProperty] private bool _engineFound;
+    [ObservableProperty] private bool _engineMissing;
     [ObservableProperty] private string _engineStatus = string.Empty;
+    [ObservableProperty] private string _engineHelp = string.Empty;
 
     public string ConfirmHint => $"Zum Starten exakt „{CloneValidation.ConfirmWord}“ eintippen.";
+
+    /// <summary>Öffnet die Cygwin-Downloadseite, über die ddrescue (Paket „gddrescue“) zu beziehen ist.</summary>
+    [RelayCommand]
+    private void OpenEngineDownload() => SystemLauncher.Open("https://www.cygwin.com/install.html");
 
     [RelayCommand]
     private async Task LoadDisksAsync()

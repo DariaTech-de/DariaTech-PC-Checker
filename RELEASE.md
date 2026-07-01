@@ -55,12 +55,25 @@ manuell erfolgen:
 ## 4a. Klon-Engine bereitstellen (Tab „Klonen")
 
 Der Klon-Assistent nutzt **GNU ddrescue** als Engine (auch für defekte Platten).
-Aus Lizenz-/Signaturgründen ist sie **nicht** in der `.exe` enthalten:
+Aus Lizenz-/Signaturgründen ist sie **nicht** in der `.exe` enthalten. Einen
+fertigen Einzel-Download von `ddrescue.exe` für Windows gibt es nicht – GNU
+ddrescue ist ein POSIX-Werkzeug. Lizenzsauberer Bezugsweg über **Cygwin**:
 
-- Einen Windows-Build von `ddrescue.exe` besorgen und in den Ordner **`tools`**
-  neben der `.exe` legen (`…\tools\ddrescue.exe`).
-- Ohne diese Datei zeigt der Tab den Hinweis „ddrescue.exe fehlt" und das
-  Klonen bleibt gesperrt.
+1. Cygwin-Installer von <https://www.cygwin.com/install.html> herunterladen und
+   starten (im Tool: Tab „Klonen" → Button **„Cygwin herunterladen"**).
+2. Im Paket-Auswahlschritt nach **`gddrescue`** suchen und zur Installation
+   markieren (das Paket heißt `gddrescue`, das Programm `ddrescue`).
+3. Nach der Installation **beide** Dateien aus `C:\cygwin64\bin` in den Ordner
+   **`tools`** neben die `.exe` kopieren:
+   - `ddrescue.exe` → `…\tools\ddrescue.exe`
+   - `cygwin1.dll`  → `…\tools\cygwin1.dll` (wird von `ddrescue.exe` benötigt)
+
+Ohne diese Dateien zeigt der Tab den Hinweis „ddrescue.exe fehlt" samt dieser
+Anleitung, und das Klonen bleibt gesperrt.
+
+**Alternativen ohne ddrescue:** Clonezilla (bootfähiger USB-Stick), Macrium
+Reflect / HDD Raw Copy Tool oder eine Klon-Dockingstation (klont offline auf
+Knopfdruck).
 
 Sicherheitsverhalten des Assistenten (zur Erinnerung): Quelle/Ziel werden mit
 Modell/Seriennummer/Größe/SMART angezeigt; die System-/Startplatte ist als Ziel
