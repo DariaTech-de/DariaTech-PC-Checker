@@ -20,7 +20,8 @@ public sealed class ReportExporter
         IReadOnlyList<CheckResult> results,
         ReportContext? context = null,
         string? targetFolder = null,
-        DateTime? timestamp = null)
+        DateTime? timestamp = null,
+        ScanComparison? comparison = null)
     {
         var folder = targetFolder
             ?? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
@@ -31,7 +32,7 @@ public sealed class ReportExporter
         var file = Path.Combine(folder,
             $"PC-Doktor_{computer}_{now:yyyy-MM-dd_HHmm}.html");
 
-        File.WriteAllText(file, BuildHtml(results, computer, now, context), new UTF8Encoding(false));
+        File.WriteAllText(file, BuildHtml(results, computer, now, context, comparison), new UTF8Encoding(false));
         return file;
     }
 
@@ -43,7 +44,8 @@ public sealed class ReportExporter
         IReadOnlyList<CheckResult> results,
         ReportContext? context = null,
         string? targetFolder = null,
-        DateTime? timestamp = null)
+        DateTime? timestamp = null,
+        ScanComparison? comparison = null)
     {
         var folder = targetFolder
             ?? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
@@ -55,7 +57,7 @@ public sealed class ReportExporter
 
         try
         {
-            ReportPdfRenderer.Render(results, context, computer, now, pdf);
+            ReportPdfRenderer.Render(results, context, computer, now, pdf, comparison);
             return File.Exists(pdf) ? pdf : null;
         }
         catch
@@ -74,7 +76,7 @@ public sealed class ReportExporter
 
     /// <summary>Erzeugt das vollständige HTML-Dokument (öffentlich für Tests).</summary>
     public string BuildHtml(IReadOnlyList<CheckResult> results, string computer, DateTime now,
-        ReportContext? context = null)
+        ReportContext? context = null, ScanComparison? comparison = null)
     {
         var critical = results.Where(r => r.Severity == Severity.Critical).ToList();
         var warnings = results.Where(r => r.Severity == Severity.Warning).ToList();
@@ -115,6 +117,7 @@ public sealed class ReportExporter
         var score = HealthScore(results);
         var scoreClass = score >= 80 ? "ok" : score >= 50 ? "warn" : "crit";
         var handover = BuildHandover(context, now);
+        var comparisonHtml = BuildComparison(comparison);
 
         return $$"""
 <!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
@@ -150,6 +153,9 @@ public sealed class ReportExporter
   .score.crit{background:#a32b22;color:#ffeceb;}
   .handover{background:#f3f7f6;border:1px solid #e1eae7;border-radius:8px;padding:12px 16px;margin-bottom:8px;}
   .handover td.label{color:#0E3B34;width:120px;font-weight:600;}
+  .trend{display:inline-block;margin:2px 0 8px;padding:3px 10px;border-radius:12px;font-size:12.5px;font-weight:600;}
+  .trend.up{background:#1f7a46;color:#eafff2;} .trend.down{background:#a32b22;color:#ffeceb;} .trend.flat{background:#9a6700;color:#fff7e6;}
+  .delta-up{color:#1a7f37;font-weight:700;} .delta-down{color:#b3261e;font-weight:700;}
 </style></head>
 <body><div class="wrap">
 <header>
@@ -165,6 +171,7 @@ public sealed class ReportExporter
 </header>
 <div class="content">
 {{handover}}
+{{comparisonHtml}}
 <h2>Zusammenfassung</h2>
 {{summary}}
 {{sections}}
@@ -190,6 +197,31 @@ public sealed class ReportExporter
         Severity.Critical => "crit",
         _ => "info"
     };
+
+    /// <summary>Vorher/Nachher-Abschnitt (Erfolgskontrolle nach den Reparaturen).</summary>
+    private static string BuildComparison(ScanComparison? c)
+    {
+        if (c is null || !c.HasChanges) return string.Empty;
+
+        var trendClass = c.ScoreDelta > 0 ? "up" : c.ScoreDelta < 0 ? "down" : "flat";
+        var deltaClass = c.ScoreDelta >= 0 ? "delta-up" : "delta-down";
+        var deltaText = $"{(c.ScoreDelta >= 0 ? "+" : "")}{c.ScoreDelta}";
+
+        var sb = new StringBuilder("<h2>Vorher / Nachher</h2>");
+        sb.Append($"<div class='trend {trendClass}'>{Enc(c.Trend)} · Gesundheit {deltaText} Punkte</div>");
+        sb.Append("<div class='handover'><table>");
+        sb.Append($"<tr><td class='label'>Zeitraum</td><td>{c.BeforeTime:dd.MM. HH:mm} → {c.AfterTime:HH:mm} Uhr</td></tr>");
+        sb.Append($"<tr><td class='label'>Gesundheit</td><td>{c.ScoreBefore}/100 → <strong>{c.ScoreAfter}/100</strong> " +
+                  $"(<span class='{deltaClass}'>{deltaText}</span>)</td></tr>");
+        sb.Append($"<tr><td class='label'>Kritische Punkte</td><td>{c.CriticalBefore} → {c.CriticalAfter}</td></tr>");
+        sb.Append($"<tr><td class='label'>Warnungen</td><td>{c.WarningBefore} → {c.WarningAfter}</td></tr>");
+        if (c.Improved.Count > 0)
+            sb.Append($"<tr><td class='label'>Verbessert</td><td>{Enc(string.Join(", ", c.Improved.Select(a => a.Area)))}</td></tr>");
+        if (c.Worsened.Count > 0)
+            sb.Append($"<tr><td class='label'>Verschlechtert</td><td>{Enc(string.Join(", ", c.Worsened.Select(a => a.Area)))}</td></tr>");
+        sb.Append("</table></div>");
+        return sb.ToString();
+    }
 
     private static string BuildHandover(ReportContext? c, DateTime now)
     {

@@ -29,6 +29,10 @@ public sealed partial class MainViewModel : ObservableObject
     private CancellationTokenSource? _cts;
     private List<CheckResult> _lastResults = new();
 
+    // Ausgangszustand für den Vorher/Nachher-Vergleich (erster Scan des Einsatzes).
+    private List<CheckResult>? _baselineResults;
+    private DateTime _baselineTime;
+
     public MainViewModel(
         DiagnosticEngine engine,
         IEnumerable<ICheck> checks,
@@ -84,6 +88,10 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isFixRunning;
     [ObservableProperty] private string _currentFixTitle = string.Empty;
 
+    // Vorher/Nachher-Vergleich (Erfolgskontrolle nach den Reparaturen)
+    [ObservableProperty] private bool _hasComparison;
+    [ObservableProperty] private string _comparisonHeadline = string.Empty;
+
     /// <summary>Schnellmodus: überspringt die langsame Windows-Update-Suche.</summary>
     public bool SkipWindowsUpdate
     {
@@ -110,6 +118,14 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _lastResults = (await _engine.RunAllAsync(progress, _cts.Token)
                 .ConfigureAwait(true)).ToList();
+
+            // Ersten Scan des Einsatzes als Ausgangszustand merken (für Vorher/Nachher).
+            if (_baselineResults is null)
+            {
+                _baselineResults = _lastResults.ToList();
+                _baselineTime = DateTime.Now;
+            }
+
             BuildAreas(_lastResults);
             UpdateOverall();
             HasResults = true;
@@ -191,15 +207,16 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var context = BuildContext();
+            var comparison = CurrentComparison();
 
             string? path;
             if (asPdf)
             {
-                path = _reportExporter.ExportPdf(_lastResults, context);
+                path = _reportExporter.ExportPdf(_lastResults, context, comparison: comparison);
                 if (path is null)
                 {
                     // Edge nicht gefunden – HTML als Ersatz erzeugen.
-                    path = _reportExporter.Export(_lastResults, context);
+                    path = _reportExporter.Export(_lastResults, context, comparison: comparison);
                     _dialogs.Inform("PDF nicht möglich",
                         "Das PDF konnte nicht erstellt werden – es wurde stattdessen die HTML-Datei erstellt:\n" + path);
                     OpenFile(path);
@@ -208,7 +225,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
             else
             {
-                path = _reportExporter.Export(_lastResults, context);
+                path = _reportExporter.Export(_lastResults, context, comparison: comparison);
             }
 
             _dialogs.Inform("Bericht erstellt", $"Der Bericht wurde gespeichert:\n{path}");
@@ -301,6 +318,32 @@ public sealed partial class MainViewModel : ObservableObject
         CriticalCount = _lastResults.Count(r => r.Severity == Severity.Critical);
         WarningCount = _lastResults.Count(r => r.Severity == Severity.Warning);
         HealthScore = ReportExporter.HealthScore(_lastResults);
+
+        var comparison = CurrentComparison();
+        HasComparison = comparison is { HasChanges: true };
+        ComparisonHeadline = comparison?.Headline ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Vergleich zwischen Ausgangszustand und aktuellem Befund – oder <c>null</c>,
+    /// solange kein Ausgangszustand erfasst ist.
+    /// </summary>
+    private ScanComparison? CurrentComparison()
+        => _baselineResults is null
+            ? null
+            : ScanComparer.Compare(_baselineResults, _baselineTime, _lastResults, DateTime.Now);
+
+    /// <summary>
+    /// Setzt den aktuellen Befund als neuen Vergleichs-Ausgangspunkt (z. B. für
+    /// einen weiteren PC im selben Einsatz).
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanExport))]
+    private void ResetBaseline()
+    {
+        _baselineResults = _lastResults.ToList();
+        _baselineTime = DateTime.Now;
+        UpdateOverall();
+        StatusText = "Ausgangszustand aktualisiert – der Vorher/Nachher-Vergleich zählt ab jetzt.";
     }
 
     /// <summary>Ordnet den registrierten Reparaturen ihre Bereiche zu.</summary>
@@ -337,6 +380,7 @@ public sealed partial class MainViewModel : ObservableObject
         ExportReportCommand.NotifyCanExecuteChanged();
         ExportPdfCommand.NotifyCanExecuteChanged();
         SaveToHistoryCommand.NotifyCanExecuteChanged();
+        ResetBaselineCommand.NotifyCanExecuteChanged();
     }
 
     private void RefreshCommands()
@@ -345,6 +389,7 @@ public sealed partial class MainViewModel : ObservableObject
         ExportReportCommand.NotifyCanExecuteChanged();
         ExportPdfCommand.NotifyCanExecuteChanged();
         SaveToHistoryCommand.NotifyCanExecuteChanged();
+        ResetBaselineCommand.NotifyCanExecuteChanged();
         RunFixCommand.NotifyCanExecuteChanged();
     }
 }

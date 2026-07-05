@@ -26,7 +26,7 @@ public static class ReportPdfRenderer
     }
 
     public static void Render(IReadOnlyList<CheckResult> results, ReportContext? context,
-        string computer, DateTime now, string path)
+        string computer, DateTime now, string path, ScanComparison? comparison = null)
     {
         var score = ReportExporter.HealthScore(results);
         var scoreColor = score >= 80 ? "#1F7A46" : score >= 50 ? "#9A6700" : "#A32B22";
@@ -70,6 +70,30 @@ public static class ReportPdfRenderer
                         HandoverRow(h, "Techniker", context.Technician);
                         HandoverRow(h, "Datum", now.ToString("dd.MM.yyyy"));
                         HandoverRow(h, "Notizen", context.Notes);
+                    });
+                }
+
+                if (comparison is { HasChanges: true })
+                {
+                    var deltaText = $"{(comparison.ScoreDelta >= 0 ? "+" : "")}{comparison.ScoreDelta}";
+                    var deltaColor = comparison.ScoreDelta > 0 ? OkColor
+                        : comparison.ScoreDelta < 0 ? CritColor : WarnColor;
+
+                    col.Item().PaddingTop(4).Text("Vorher / Nachher").Bold().FontColor(Petrol).FontSize(12);
+                    col.Item().PaddingTop(2).Text($"{comparison.Trend} · Gesundheit {deltaText} Punkte")
+                        .FontColor(deltaColor).Bold().FontSize(10);
+                    col.Item().PaddingTop(4).PaddingBottom(6).Column(h =>
+                    {
+                        HandoverRow(h, "Zeitraum",
+                            $"{comparison.BeforeTime:dd.MM. HH:mm} → {comparison.AfterTime:HH:mm} Uhr");
+                        HandoverRow(h, "Gesundheit",
+                            $"{comparison.ScoreBefore}/100 → {comparison.ScoreAfter}/100 ({deltaText})");
+                        HandoverRow(h, "Kritisch", $"{comparison.CriticalBefore} → {comparison.CriticalAfter}");
+                        HandoverRow(h, "Warnungen", $"{comparison.WarningBefore} → {comparison.WarningAfter}");
+                        if (comparison.Improved.Count > 0)
+                            HandoverRow(h, "Verbessert", string.Join(", ", comparison.Improved.Select(a => a.Area)));
+                        if (comparison.Worsened.Count > 0)
+                            HandoverRow(h, "Verschlechtert", string.Join(", ", comparison.Worsened.Select(a => a.Area)));
                     });
                 }
 

@@ -106,6 +106,15 @@
                                 </StackPanel>
                             </DockPanel>
 
+                            <!-- Vorher/Nachher-Banner (Erfolgskontrolle nach den Reparaturen) -->
+                            <Border Margin="0,10,0,0" CornerRadius="8" Padding="14,9" Background="#0E3B34"
+                                    Visibility="{Binding HasComparison, Converter={StaticResource BoolToVis}}">
+                                <TextBlock TextWrapping="Wrap">
+                                    <Run Text="↔ Vorher/Nachher: " Foreground="#6FE0A8" FontWeight="SemiBold" />
+                                    <Run Text="{Binding ComparisonHeadline, Mode=OneWay}" Foreground="White" />
+                                </TextBlock>
+                            </Border>
+
                             <StackPanel Orientation="Horizontal" Margin="0,12,0,0" VerticalAlignment="Center">
                                 <TextBlock Text="Kunde:" VerticalAlignment="Center" Margin="0,0,6,0" />
                                 <TextBox Width="160" Margin="0,0,14,0" Text="{Binding CustomerName}" />
@@ -119,6 +128,9 @@
                                            Command="{Binding ExportPdfCommand}" />
                                 <ui:Button Content="Im Verlauf speichern" Margin="8,0,0,0" Padding="14,8"
                                            Command="{Binding SaveToHistoryCommand}" />
+                                <ui:Button Content="Ausgangswert zurücksetzen" Margin="8,0,0,0" Padding="14,8"
+                                           Command="{Binding ResetBaselineCommand}"
+                                           ToolTip="Setzt den aktuellen Zustand als neuen Vergleichs-Ausgangspunkt (z. B. für einen weiteren PC)." />
                             </StackPanel>
                         </StackPanel>
                     </Border>
