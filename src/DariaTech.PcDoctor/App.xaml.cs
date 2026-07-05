@@ -75,6 +75,7 @@ public partial class App : Application
         services.AddSingleton<ICheck, InstalledProgramsCheck>();
         services.AddSingleton<ICheck, DriverDeviceCheck>();
         services.AddSingleton<ICheck, NetworkCheck>();
+        services.AddSingleton<ICheck, NetworkQualityCheck>();
         services.AddSingleton<ICheck, EventLogCheck>();
 
         // Fixes (bereichsbezogen; DisableStartupItemFix wird je Eintrag vom Check erzeugt)
