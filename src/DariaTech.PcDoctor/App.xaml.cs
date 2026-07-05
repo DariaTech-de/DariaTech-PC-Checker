@@ -61,6 +61,7 @@ public partial class App : Application
 
         // Checks (Reihenfolge = Reihenfolge im Dashboard)
         services.AddSingleton<ICheck, SystemInfoCheck>();
+        services.AddSingleton<ICheck, WindowsActivationCheck>();
         services.AddSingleton<ICheck, CpuMemoryCheck>();
         services.AddSingleton<ICheck, DiskSpaceCheck>();
         services.AddSingleton<ICheck, SmartHealthCheck>();
