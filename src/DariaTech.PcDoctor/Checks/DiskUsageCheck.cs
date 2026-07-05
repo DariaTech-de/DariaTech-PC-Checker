@@ -43,7 +43,7 @@ public sealed class DiskUsageCheck : ICheck
             reclaimable += temp;
             AddFolder(results, "Temporäre Dateien", temp,
                 "Zwischendateien von Windows und Programmen. Gefahrlos leerbar über die Reparatur " +
-                "„Temporäre Dateien leeren".");
+                "„Temporäre Dateien leeren“.");
 
             var updateCache = DirSize(Path.Combine(windows, "SoftwareDistribution", "Download"), ct);
             reclaimable += updateCache;
