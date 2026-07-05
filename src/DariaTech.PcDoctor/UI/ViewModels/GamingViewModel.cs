@@ -24,6 +24,7 @@ public sealed partial class GamingViewModel : ObservableObject
     private readonly ILogger<GamingViewModel> _log;
     private readonly DispatcherTimer _timer;
     private CancellationTokenSource? _stressCts;
+    private bool _tickBusy;
 
     public GamingViewModel(ISensorService sensors, StressTestService stress,
         IDialogService dialogs, ILogger<GamingViewModel> log)
@@ -78,7 +79,16 @@ public sealed partial class GamingViewModel : ObservableObject
     private async Task StartMonitoringAsync()
     {
         SensorStatus = "Initialisiere Sensorik …";
-        SensorAvailable = await Task.Run(() => _sensors.IsAvailable).ConfigureAwait(true);
+        var available = await ProbeSensorsAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(true);
+        if (available is null)
+        {
+            SensorStatus = "Sensorik reagiert nicht (Treiber hängt?) – Live-Werte sind auf diesem Gerät " +
+                "nicht verfügbar. Der Stresstest belastet die CPU trotzdem, nur ohne Temperaturanzeige.";
+            SensorAvailable = false;
+            return;
+        }
+
+        SensorAvailable = available.Value;
         if (!SensorAvailable)
         {
             SensorStatus = "Sensorik nicht verfügbar – Temperaturen/Lüfter können auf diesem Gerät nicht " +
@@ -132,8 +142,11 @@ public sealed partial class GamingViewModel : ObservableObject
 
         try
         {
-            // Sicherstellen, dass die Sensorik offen ist (für die Live-Werte im Test).
-            SensorAvailable = await Task.Run(() => _sensors.IsAvailable).ConfigureAwait(true);
+            // Sensorik kurz anfragen (für die Live-Werte im Test) – aber den
+            // Teststart nie an einer hängenden Sensor-Initialisierung scheitern
+            // lassen: Die Last läuft auch ohne Sensordaten.
+            var available = await ProbeSensorsAsync(TimeSpan.FromSeconds(3)).ConfigureAwait(true);
+            if (available is not null) SensorAvailable = available.Value;
             var report = await _stress.RunAsync(options, progress, _stressCts.Token).ConfigureAwait(true);
             StressReport = report;
             OnPropertyChanged(nameof(HasReport));
@@ -168,6 +181,11 @@ public sealed partial class GamingViewModel : ObservableObject
 
     private async void OnTick(object? sender, EventArgs e)
     {
+        // Keine neue Abfrage starten, solange die vorige noch läuft — sonst
+        // stauen sich bei einem trägen/hängenden Sensor-Stack blockierte
+        // Hintergrund-Threads auf.
+        if (_tickBusy) return;
+        _tickBusy = true;
         try
         {
             var readings = await Task.Run(() => _sensors.Read()).ConfigureAwait(true);
@@ -176,6 +194,32 @@ public sealed partial class GamingViewModel : ObservableObject
         catch (Exception ex)
         {
             _log.LogWarning(ex, "Live-Sensorabfrage fehlgeschlagen");
+        }
+        finally
+        {
+            _tickBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Fragt <see cref="ISensorService.IsAvailable"/> mit Zeitlimit ab.
+    /// Liefert null, wenn die Sensorik nicht rechtzeitig antwortet (z. B. weil
+    /// die Treiber-Initialisierung auf dem Gerät hängt).
+    /// </summary>
+    private async Task<bool?> ProbeSensorsAsync(TimeSpan timeout)
+    {
+        var probe = Task.Run(() => _sensors.IsAvailable);
+        var finished = await Task.WhenAny(probe, Task.Delay(timeout)).ConfigureAwait(true);
+        if (finished != probe)
+        {
+            _log.LogWarning("Sensorik antwortet nicht innerhalb von {Timeout}", timeout);
+            return null;
+        }
+        try { return await probe.ConfigureAwait(true); }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Sensor-Initialisierung fehlgeschlagen");
+            return false;
         }
     }
 

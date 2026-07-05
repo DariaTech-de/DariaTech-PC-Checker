@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using DariaTech.PcDoctor.Models;
 using Microsoft.Extensions.Logging;
 
@@ -8,6 +9,14 @@ namespace DariaTech.PcDoctor.Core.StressTest;
 /// festem Takt Sensor-Samples und lässt das Ergebnis vom
 /// <see cref="StressTestAnalyzer"/> bewerten. Der Test ist jederzeit abbrechbar;
 /// auch ein Abbruch liefert einen Bericht über die bis dahin erfassten Daten.
+///
+/// Wichtig für die Robustheit:
+/// - Die Last läuft auf dedizierten Threads, nicht im Threadpool. Spin-Schleifen
+///   im Threadpool würden alle Pool-Threads dauerhaft belegen und damit genau
+///   die Infrastruktur aushungern (Task.Delay, Sensor-Reads, Progress), die der
+///   Test selbst braucht — die Tachos frieren dann ein.
+/// - Sensor-Reads laufen mit Timeout. Ein hängender Sensor-Stack (kommt auf
+///   manchen Mainboards vor) darf weder den Teststart noch den Abschluss blockieren.
 /// </summary>
 public sealed class StressTestService
 {
@@ -32,23 +41,53 @@ public sealed class StressTestService
         cts.CancelAfter(options.Duration);
         var token = cts.Token;
 
-        var workers = new List<Task>();
+        // Last auf dedizierten Threads erzeugen — unabhängig vom Threadpool.
+        var workerErrors = new ConcurrentQueue<Exception>();
+        var workers = new List<Thread>();
         if (options.StressCpu)
             for (var i = 0; i < Environment.ProcessorCount; i++)
-                workers.Add(Task.Run(() => CpuLoad(token), token));
+                workers.Add(StartWorker($"StressCpu-{i}", () => CpuLoad(token), workerErrors));
         if (options.StressMemory)
-            workers.Add(Task.Run(() => MemoryLoad(options.MemoryMegabytes, token), token));
+            workers.Add(StartWorker("StressMemory", () => MemoryLoad(options.MemoryMegabytes, token), workerErrors));
+        _log.LogInformation("Stresstest: {Count} Last-Threads gestartet", workers.Count);
 
         var samples = new List<StressSample>();
         var safetyAborted = false;
         string? safetyNote = null;
         var start = DateTime.UtcNow;
+        Task<IReadOnlyList<SensorReading>>? pendingRead = null;
+        var sensorTimeoutLogged = false;
+
         try
         {
             while (!token.IsCancellationRequested)
             {
                 var elapsed = DateTime.UtcNow - start;
-                var readings = SafeRead();
+
+                // Sensoren mit Zeitlimit lesen: hängt der Sensor-Stack, läuft der
+                // Test (inkl. Fortschritt und sauberem Ende) trotzdem weiter.
+                pendingRead ??= Task.Run(SafeRead, CancellationToken.None);
+                if (!pendingRead.IsCompleted)
+                    await Task.WhenAny(pendingRead, Task.Delay(options.SensorReadTimeout, CancellationToken.None))
+                        .ConfigureAwait(false);
+
+                IReadOnlyList<SensorReading> readings;
+                if (pendingRead.IsCompleted)
+                {
+                    readings = await pendingRead.ConfigureAwait(false);
+                    pendingRead = null;
+                }
+                else
+                {
+                    readings = Array.Empty<SensorReading>();
+                    if (!sensorTimeoutLogged)
+                    {
+                        sensorTimeoutLogged = true;
+                        _log.LogWarning("Sensorabfrage antwortet nicht (> {Timeout}) – Stresstest läuft ohne Live-Sensorwerte weiter",
+                            options.SensorReadTimeout);
+                    }
+                }
+
                 samples.Add(new StressSample(elapsed, readings));
                 progress?.Report(new StressProgress(elapsed, options.Duration, readings));
 
@@ -71,11 +110,29 @@ public sealed class StressTestService
         }
         catch (OperationCanceledException) { /* Test beendet/abgebrochen */ }
 
-        var (faulted, note) = await StopWorkersAsync(workers).ConfigureAwait(false);
+        var (faulted, note) = await StopWorkersAsync(workers, workerErrors).ConfigureAwait(false);
         _log.LogInformation("Stresstest beendet: {Samples} Samples, stabil={Stable}, Notabschaltung={Safety}",
             samples.Count, !faulted, safetyAborted);
 
         return StressTestAnalyzer.Analyze(samples, options, faulted, note, safetyAborted, safetyNote);
+    }
+
+    /// <summary>Startet einen Last-Thread (Background, damit er das App-Ende nie blockiert).</summary>
+    private static Thread StartWorker(string name, Action work, ConcurrentQueue<Exception> errors)
+    {
+        var thread = new Thread(() =>
+        {
+            try { work(); }
+            catch (OperationCanceledException) { /* erwartetes Ende */ }
+            catch (Exception ex) { errors.Enqueue(ex); }
+        })
+        {
+            IsBackground = true,
+            Name = name,
+            Priority = ThreadPriority.Normal
+        };
+        thread.Start();
+        return thread;
     }
 
     /// <summary>Liefert einen Abbruchgrund, wenn eine Sicherheitstemperatur erreicht ist – sonst null.</summary>
@@ -108,22 +165,22 @@ public sealed class StressTestService
         }
     }
 
-    private static async Task<(bool Faulted, string? Note)> StopWorkersAsync(List<Task> workers)
+    private static async Task<(bool Faulted, string? Note)> StopWorkersAsync(
+        List<Thread> workers, ConcurrentQueue<Exception> errors)
     {
         if (workers.Count == 0) return (false, null);
-        try
+
+        // Threads beenden sich selbst über das Token; hier nur kurz einsammeln,
+        // ohne den Aufrufer zu blockieren.
+        await Task.Run(() =>
         {
-            await Task.WhenAll(workers).ConfigureAwait(false);
-            return (false, null);
-        }
-        catch (OperationCanceledException)
-        {
-            return (false, null); // erwartetes Ende durch Abbruch/Timeout
-        }
-        catch (Exception ex)
-        {
+            foreach (var worker in workers)
+                worker.Join(TimeSpan.FromSeconds(5));
+        }).ConfigureAwait(false);
+
+        if (errors.TryDequeue(out var ex))
             return (true, $"Ein Lastprozess brach unerwartet ab: {ex.Message}");
-        }
+        return (false, null);
     }
 
     /// <summary>Hält alle Kerne mit Gleitkomma-Arbeit beschäftigt.</summary>

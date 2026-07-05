@@ -9,6 +9,13 @@ public sealed class StressTestOptions
     public int MemoryMegabytes { get; init; } = 1024;
     public TimeSpan SampleInterval { get; init; } = TimeSpan.FromSeconds(1);
 
+    /// <summary>
+    /// Maximale Wartezeit auf eine einzelne Sensorabfrage. Antwortet der
+    /// Sensor-Stack nicht (hängender Treiber), läuft der Test ohne Live-Werte
+    /// weiter, statt einzufrieren.
+    /// </summary>
+    public TimeSpan SensorReadTimeout { get; init; } = TimeSpan.FromSeconds(2);
+
     /// <summary>CPU-Temperatur (°C), ab der von thermischer Drosselung ausgegangen wird.</summary>
     public double CpuTempCriticalC { get; init; } = 95;
 
