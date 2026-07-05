@@ -364,6 +364,7 @@ public sealed partial class MainViewModel : ObservableObject
                 typeof(SpeedTestFix), typeof(FlushDnsFix), typeof(WinsockResetFix), typeof(NetworkResetFix)
             },
             "Netzwerk-Qualität" => new[] { typeof(SpeedTestFix), typeof(FlushDnsFix) },
+            "Prozessor & Arbeitsspeicher" => new[] { typeof(MemoryDiagnosticFix) },
             "Windows-Sicherheit" => new[] { typeof(DefenderQuickScanFix) },
             "Windows-Updates" => new[] { typeof(WindowsUpdateRepairFix) },
             "Akku" => new[] { typeof(BatteryReportFix) },

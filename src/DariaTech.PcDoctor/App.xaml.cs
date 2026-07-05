@@ -95,6 +95,7 @@ public partial class App : Application
         services.AddSingleton<IFixAction, RestartExplorerFix>();
         services.AddSingleton<IFixAction, PowerPlanHighPerformanceFix>();
         services.AddSingleton<IFixAction, GroupPolicyUpdateFix>();
+        services.AddSingleton<IFixAction, MemoryDiagnosticFix>();
 
         // Core-Dienste
         services.AddSingleton<DiagnosticEngine>();
