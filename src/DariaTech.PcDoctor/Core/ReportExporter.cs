@@ -30,7 +30,7 @@ public sealed class ReportExporter
         var now = timestamp ?? DateTime.Now;
         var computer = Environment.MachineName;
         var file = Path.Combine(folder,
-            $"PC-Doktor_{computer}_{now:yyyy-MM-dd_HHmm}.html");
+            $"{CompanyInfo.Product}_{computer}_{now:yyyy-MM-dd_HHmm}.html");
 
         File.WriteAllText(file, BuildHtml(results, computer, now, context, comparison), new UTF8Encoding(false));
         return file;
@@ -53,7 +53,7 @@ public sealed class ReportExporter
 
         var now = timestamp ?? DateTime.Now;
         var computer = Environment.MachineName;
-        var pdf = Path.Combine(folder, $"PC-Doktor_{computer}_{now:yyyy-MM-dd_HHmm}.pdf");
+        var pdf = Path.Combine(folder, $"{CompanyInfo.Product}_{computer}_{now:yyyy-MM-dd_HHmm}.pdf");
 
         try
         {
@@ -121,7 +121,7 @@ public sealed class ReportExporter
 
         return $$"""
 <!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
-<title>PC-Doktor – {{Enc(computer)}}</title>
+<title>{{CompanyInfo.Product}} – {{Enc(computer)}}</title>
 <style>
   body{font-family:Segoe UI,Arial,sans-serif;background:#f4f6f9;color:#1a2433;margin:0;padding:32px;}
   .wrap{max-width:860px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);}
@@ -164,7 +164,7 @@ public sealed class ReportExporter
     <div><div class="name">DariaTech</div><div class="tag">IT-Systemhaus</div></div>
   </div>
   <div class="meta">
-    <div class="doc">PC-Doktor &middot; Kundenbericht</div>
+    <div class="doc">{{CompanyInfo.Product}} &middot; Kundenbericht</div>
     <div>{{Enc(computer)}} &middot; {{now:dd.MM.yyyy HH:mm}} Uhr</div>
     <div class="score {{scoreClass}}">Gesundheit {{score}}/100</div>
   </div>
@@ -179,7 +179,7 @@ public sealed class ReportExporter
 <footer>
   <div class="pub"><strong>{{Enc(CompanyInfo.Name)}}</strong> &middot; {{Enc(CompanyInfo.Street)}} &middot; {{Enc(CompanyInfo.City)}}</div>
   <div class="pub">Telefon: {{Enc(CompanyInfo.Phone)}} &middot; E-Mail: {{Enc(CompanyInfo.Email)}}</div>
-  <div class="disclaimer">Automatisch erstellt mit dem DariaTech PC-Doktor. Werte ohne Gewähr.</div>
+  <div class="disclaimer">Automatisch erstellt mit dem {{CompanyInfo.ProductFull}}. Werte ohne Gewähr.</div>
 </footer>
 </div></body></html>
 """;

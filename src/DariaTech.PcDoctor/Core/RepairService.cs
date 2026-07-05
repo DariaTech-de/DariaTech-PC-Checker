@@ -1,4 +1,5 @@
 using DariaTech.PcDoctor.Infrastructure;
+using DariaTech.PcDoctor.Models;
 using Microsoft.Extensions.Logging;
 
 namespace DariaTech.PcDoctor.Core;
@@ -34,7 +35,7 @@ public sealed class RepairService
         {
             progress.Report("Lege Systemwiederherstellungspunkt an …");
             var rp = await _restorePoints
-                .CreateAsync($"DariaTech PC-Doktor: {fix.Title}", ct)
+                .CreateAsync($"{CompanyInfo.ProductFull}: {fix.Title}", ct)
                 .ConfigureAwait(false);
 
             progress.Report(rp.Message);

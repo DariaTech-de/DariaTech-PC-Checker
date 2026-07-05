@@ -6,6 +6,15 @@ namespace DariaTech.PcDoctor.Models;
 /// </summary>
 public static class CompanyInfo
 {
+    /// <summary>
+    /// Produktname (Platzhalter laut Projektvorgabe – hier zentral änderbar).
+    /// Wird in App-Titel, Bericht und Wiederherstellungspunkt verwendet.
+    /// </summary>
+    public const string Product = "PC-Doktor";
+
+    /// <summary>Produktname mit Markenpräfix, z. B. für Fenstertitel und Bericht.</summary>
+    public const string ProductFull = "DariaTech " + Product;
+
     public const string Name = "DariaTech IT-Systemhaus";
     public const string Street = "Josef-Schmid-Weg 23";
     public const string City = "87700 Memmingen";

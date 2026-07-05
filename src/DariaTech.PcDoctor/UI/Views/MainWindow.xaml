@@ -6,10 +6,11 @@
     xmlns:vm="clr-namespace:DariaTech.PcDoctor.UI.ViewModels"
     xmlns:conv="clr-namespace:DariaTech.PcDoctor.UI.Converters"
     xmlns:controls="clr-namespace:DariaTech.PcDoctor.UI.Controls"
+    xmlns:models="clr-namespace:DariaTech.PcDoctor.Models"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="DariaTech PC-Doktor"
+    Title="{x:Static models:CompanyInfo.ProductFull}"
     Width="1180" Height="800"
     MinWidth="980" MinHeight="640"
     WindowStartupLocation="CenterScreen"
@@ -32,7 +33,7 @@
         </Grid.RowDefinitions>
 
         <!-- Titelleiste -->
-        <ui:TitleBar Grid.Row="0" Title="DariaTech PC-Doktor" />
+        <ui:TitleBar Grid.Row="0" Title="{x:Static models:CompanyInfo.ProductFull}" />
 
         <!-- Marken-Header (Petrol) mit Logo und Gesamtampel -->
         <Border Grid.Row="1" Background="#0E3B34" Padding="24,16">
@@ -42,10 +43,13 @@
                            Margin="0,0,14,0" VerticalAlignment="Center"
                            RenderOptions.BitmapScalingMode="HighQuality" />
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="DariaTech PC-Doktor" Foreground="White"
+                        <TextBlock Text="{x:Static models:CompanyInfo.ProductFull}" Foreground="White"
                                    FontSize="22" FontWeight="SemiBold" />
                         <TextBlock Text="Zustandsanalyse &amp; Schnellreparatur für Windows-PCs"
                                    Foreground="#6FE0A8" FontSize="13" Margin="0,2,0,0" />
+                        <TextBlock Foreground="#7FB3A2" FontSize="11" Margin="0,2,0,0">
+                            <Run Text="Version" /><Run Text=" " /><Run Text="{x:Static models:AppInfo.Version}" />
+                        </TextBlock>
                     </StackPanel>
                 </StackPanel>
 

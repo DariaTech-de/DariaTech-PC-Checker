@@ -45,7 +45,7 @@ public static class ReportPdfRenderer
                 row.RelativeItem().Column(col =>
                 {
                     col.Item().Text("DariaTech IT-Systemhaus").FontColor("#FFFFFF").Bold().FontSize(16);
-                    col.Item().Text("PC-Doktor · Kundenbericht").FontColor(Mint).FontSize(9);
+                    col.Item().Text($"{CompanyInfo.Product} · Kundenbericht").FontColor(Mint).FontSize(9);
                 });
                 row.ConstantItem(190).Column(col =>
                 {
@@ -142,7 +142,7 @@ public static class ReportPdfRenderer
                 col.Item().Text($"Telefon: {CompanyInfo.Phone} · E-Mail: {CompanyInfo.Email}")
                     .FontColor(Petrol).FontSize(9);
                 col.Item().PaddingTop(2)
-                    .Text("Automatisch erstellt mit dem DariaTech PC-Doktor. Werte ohne Gewähr.")
+                    .Text($"Automatisch erstellt mit dem {CompanyInfo.ProductFull}. Werte ohne Gewähr.")
                     .FontColor("#9AA6B0").FontSize(8);
             });
         })).GeneratePdf(path);
