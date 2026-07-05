@@ -365,6 +365,7 @@ public sealed partial class MainViewModel : ObservableObject
             },
             "Netzwerk-Qualität" => new[] { typeof(SpeedTestFix), typeof(FlushDnsFix) },
             "Prozessor & Arbeitsspeicher" => new[] { typeof(MemoryDiagnosticFix) },
+            "Installierte Programme" => new[] { typeof(RemoveBloatwareFix) },
             "Windows-Sicherheit" => new[] { typeof(DefenderQuickScanFix) },
             "Windows-Updates" => new[] { typeof(WindowsUpdateRepairFix) },
             "Akku" => new[] { typeof(BatteryReportFix) },
