@@ -67,6 +67,7 @@ public partial class App : Application
         services.AddSingleton<ICheck, StorageDetailCheck>();
         services.AddSingleton<ICheck, BatteryCheck>();
         services.AddSingleton<ICheck, SecurityCheck>();
+        services.AddSingleton<ICheck, BackupStatusCheck>();
         services.AddSingleton<ICheck, WindowsUpdateCheck>();
         services.AddSingleton<ICheck, StartupCheck>();
         services.AddSingleton<ICheck, DriverDeviceCheck>();
