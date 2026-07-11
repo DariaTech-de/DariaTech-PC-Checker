@@ -39,6 +39,9 @@ public sealed class StressTestReport
     public bool SafetyAborted { get; init; }
     public string SafetyNote { get; init; } = string.Empty;
 
+    /// <summary>Ob/wie die Grafikkarte belastet wurde (z. B. „GPU-Last aktiv (NVIDIA …)").</summary>
+    public string GpuLoadNote { get; init; } = string.Empty;
+
     /// <summary>Gesamt-Ampel des Stresstests.</summary>
     public Severity Severity { get; init; } = Severity.Ok;
 

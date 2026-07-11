@@ -52,6 +52,9 @@
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="WPF-UI" Version="3.*" />
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.*" />
+    <!-- GPU-Last im Stresstest: JIT-Compute über CUDA (NVIDIA) bzw. OpenCL (AMD/Intel).
+         Rein managed – P/Invoke auf die Treiber-DLLs, keine nativen Bundle-Dateien. -->
+    <PackageReference Include="ILGPU" Version="1.5.*" />
     <PackageReference Include="QuestPDF" Version="2024.*" />
     <PackageReference Include="Serilog" Version="4.*" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.*" />

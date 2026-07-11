@@ -15,8 +15,10 @@ public static class StressTestAnalyzer
         bool workerFaulted = false,
         string? faultNote = null,
         bool safetyAborted = false,
-        string? safetyNote = null)
+        string? safetyNote = null,
+        string? gpuLoadNote = null)
     {
+        var gpuNote = gpuLoadNote ?? string.Empty;
         var duration = samples.Count > 0 ? samples[^1].Elapsed : TimeSpan.Zero;
         var stable = !workerFaulted;
         var stabilityNote = workerFaulted
@@ -34,6 +36,7 @@ public static class StressTestAnalyzer
                 StabilityNote = stabilityNote,
                 SafetyAborted = safetyAborted,
                 SafetyNote = safetyAborted ? safeNote : string.Empty,
+                GpuLoadNote = gpuNote,
                 Severity = (stable && !safetyAborted) ? Severity.Info : Severity.Critical,
                 Verdict = safetyAborted
                     ? $"Sicherheitsabschaltung: {safeNote} Der Test wurde zum Schutz der Hardware gestoppt."
@@ -109,6 +112,7 @@ public static class StressTestAnalyzer
             StabilityNote = stabilityNote,
             SafetyAborted = safetyAborted,
             SafetyNote = safetyAborted ? safeNote : string.Empty,
+            GpuLoadNote = gpuNote,
             Severity = severity,
             Verdict = verdict
         };

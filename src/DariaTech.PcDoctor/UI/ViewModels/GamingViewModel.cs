@@ -117,8 +117,8 @@ public sealed partial class GamingViewModel : ObservableObject
     {
         var minutes = Math.Clamp(StressDurationMinutes, 0.5, 60);
         var confirmed = _dialogs.Confirm("Stresstest starten",
-            $"Der Stresstest belastet CPU und Arbeitsspeicher für {minutes:0.#} Minuten voll aus – " +
-            "der PC wird dabei deutlich wärmer und lauter.\n\n" +
+            $"Der Stresstest belastet CPU, Arbeitsspeicher und – sofern vorhanden – die Grafikkarte (GPU) " +
+            $"für {minutes:0.#} Minuten voll aus – der PC wird dabei deutlich wärmer und lauter.\n\n" +
             "Sicherheit: Der Test stoppt automatisch, sobald CPU/GPU eine kritische Temperatur " +
             "erreichen, und kann jederzeit über „Stoppen“ abgebrochen werden.\n\n" +
             "Vor dem Test bitte sicherstellen, dass die Lüftung frei ist. Fortfahren?");
@@ -150,7 +150,9 @@ public sealed partial class GamingViewModel : ObservableObject
             var report = await _stress.RunAsync(options, progress, _stressCts.Token).ConfigureAwait(true);
             StressReport = report;
             OnPropertyChanged(nameof(HasReport));
-            StressStatus = report.Verdict;
+            StressStatus = string.IsNullOrEmpty(report.GpuLoadNote)
+                ? report.Verdict
+                : $"{report.Verdict} · {report.GpuLoadNote}";
         }
         catch (Exception ex)
         {

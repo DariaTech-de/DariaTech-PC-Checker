@@ -23,6 +23,7 @@ public class StressTestServiceTests
         SensorReadTimeout = TimeSpan.FromMilliseconds(100),
         StressCpu = cpu,
         StressMemory = memory,
+        StressGpu = false,   // GPU-Last in Unit-Tests aus (keine echte Hardware im CI)
         MemoryMegabytes = 8
     };
 
@@ -80,7 +81,8 @@ public class StressTestServiceTests
             SampleInterval = TimeSpan.FromMilliseconds(50),
             SensorReadTimeout = TimeSpan.FromMilliseconds(500),
             StressCpu = false,
-            StressMemory = false
+            StressMemory = false,
+            StressGpu = false
         };
 
         var run = service.RunAsync(options);
@@ -103,7 +105,8 @@ public class StressTestServiceTests
             SampleInterval = TimeSpan.FromMilliseconds(50),
             SensorReadTimeout = TimeSpan.FromMilliseconds(500),
             StressCpu = false,
-            StressMemory = false
+            StressMemory = false,
+            StressGpu = false
         };
 
         var report = await service.RunAsync(options, progress: null, ct: cts.Token);

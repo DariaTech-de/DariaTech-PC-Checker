@@ -51,6 +51,42 @@ public sealed class StressTestService
             workers.Add(StartWorker("StressMemory", () => MemoryLoad(options.MemoryMegabytes, token), workerErrors));
         _log.LogInformation("Stresstest: {Count} Last-Threads gestartet", workers.Count);
 
+        // GPU-Last läuft in einem EIGENEN Thread (nicht in der Fehler-/Stabilitäts-
+        // erfassung): Fehlt eine unterstützte GPU oder scheitert die Initialisierung,
+        // darf das den Test nie „instabil" erscheinen lassen – es entfällt nur die GPU-Last.
+        string gpuNote = "GPU-Last deaktiviert.";
+        Thread? gpuThread = null;
+        if (options.StressGpu)
+        {
+            gpuNote = "GPU-Last nicht verfügbar.";
+            gpuThread = new Thread(() =>
+            {
+                try
+                {
+                    using var gpu = new GpuStressWorker();
+                    if (gpu.TryInitialize(out var desc))
+                    {
+                        gpuNote = $"GPU-Last aktiv ({desc}).";
+                        _log.LogInformation("Stresstest: GPU-Last aktiv auf {Gpu}", desc);
+                        gpu.Run(token);
+                    }
+                    else
+                    {
+                        gpuNote = $"GPU-Last nicht verfügbar ({desc}).";
+                        _log.LogInformation("Stresstest: keine GPU-Last – {Reason}", desc);
+                    }
+                }
+                catch (OperationCanceledException) { /* normales Ende */ }
+                catch (Exception ex)
+                {
+                    gpuNote = "GPU-Last nicht verfügbar (Initialisierung fehlgeschlagen).";
+                    _log.LogWarning(ex, "GPU-Last fehlgeschlagen");
+                }
+            })
+            { IsBackground = true, Name = "StressGpu" };
+            gpuThread.Start();
+        }
+
         var samples = new List<StressSample>();
         var safetyAborted = false;
         string? safetyNote = null;
@@ -111,10 +147,16 @@ public sealed class StressTestService
         catch (OperationCanceledException) { /* Test beendet/abgebrochen */ }
 
         var (faulted, note) = await StopWorkersAsync(workers, workerErrors).ConfigureAwait(false);
-        _log.LogInformation("Stresstest beendet: {Samples} Samples, stabil={Stable}, Notabschaltung={Safety}",
-            samples.Count, !faulted, safetyAborted);
 
-        return StressTestAnalyzer.Analyze(samples, options, faulted, note, safetyAborted, safetyNote);
+        // GPU-Thread einsammeln (beendet sich über das Token). Nach dem Join ist
+        // gpuNote sicher sichtbar.
+        if (gpuThread is not null)
+            await Task.Run(() => gpuThread.Join(TimeSpan.FromSeconds(5))).ConfigureAwait(false);
+
+        _log.LogInformation("Stresstest beendet: {Samples} Samples, stabil={Stable}, Notabschaltung={Safety}, {Gpu}",
+            samples.Count, !faulted, safetyAborted, gpuNote);
+
+        return StressTestAnalyzer.Analyze(samples, options, faulted, note, safetyAborted, safetyNote, gpuNote);
     }
 
     /// <summary>Startet einen Last-Thread (Background, damit er das App-Ende nie blockiert).</summary>

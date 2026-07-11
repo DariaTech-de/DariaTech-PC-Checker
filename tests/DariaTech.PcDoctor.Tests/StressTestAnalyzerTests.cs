@@ -147,4 +147,20 @@ public class StressTestAnalyzerTests
         Assert.Equal(80, stat.Max);
         Assert.Equal(70, stat.Avg);
     }
+
+    [Fact]
+    public void Analyze_CarriesGpuLoadNote_WithSamples()
+    {
+        var samples = new List<StressSample> { Sample(0, Cpu(SensorKind.Temperature, 70)) };
+        var report = StressTestAnalyzer.Analyze(samples, Opt, gpuLoadNote: "GPU-Last aktiv (Test-GPU).");
+        Assert.Equal("GPU-Last aktiv (Test-GPU).", report.GpuLoadNote);
+    }
+
+    [Fact]
+    public void Analyze_CarriesGpuLoadNote_WithoutSamples()
+    {
+        var report = StressTestAnalyzer.Analyze(new List<StressSample>(), Opt,
+            gpuLoadNote: "GPU-Last nicht verfügbar (keine GPU).");
+        Assert.Equal("GPU-Last nicht verfügbar (keine GPU).", report.GpuLoadNote);
+    }
 }
