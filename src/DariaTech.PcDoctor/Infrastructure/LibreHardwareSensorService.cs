@@ -110,6 +110,16 @@ public sealed class LibreHardwareSensorService : ISensorService
             var kind = Map(sensor.SensorType);
             if (kind is null) continue;
 
+            // Grenzwert-„Sensoren" (z. B. NVMe „Critical/Warning Temperature") sind
+            // fest hinterlegte Schwellen, keine Live-Messwerte -> nicht anzeigen.
+            if (IsThresholdSensor(sensor.Name)) continue;
+
+            // Physikalisch unplausible Temperatur (<= 0 °C bei laufendem Windows)
+            // bedeutet fast immer „nicht lesbar" (blockierter/fehlender Kernel-
+            // Treiber, z. B. CPU-Tctl). Solche Werte NICHT als echte 0 ausgeben –
+            // sonst wirkt eine defekte Messung wie „kalt/alles gut".
+            if (kind == SensorKind.Temperature && value <= 0f) continue;
+
             into.Add(new SensorReading(
                 hardware.Name,
                 hardware.HardwareType.ToString(),
@@ -118,6 +128,15 @@ public sealed class LibreHardwareSensorService : ISensorService
                 value));
         }
     }
+
+    /// <summary>
+    /// True für Schwellenwert-Attribute, die manche Datenträger als „Sensor"
+    /// melden (feste Grenzen statt Messwerte) – gehören nicht in die Anzeige.
+    /// </summary>
+    private static bool IsThresholdSensor(string name)
+        => name.Contains("Critical Temperature", StringComparison.OrdinalIgnoreCase)
+        || name.Contains("Warning Temperature", StringComparison.OrdinalIgnoreCase)
+        || name.Contains("Throttle", StringComparison.OrdinalIgnoreCase);
 
     private void EnsureInitialized()
     {

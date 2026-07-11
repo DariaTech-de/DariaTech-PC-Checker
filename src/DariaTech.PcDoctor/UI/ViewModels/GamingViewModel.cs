@@ -240,6 +240,14 @@ public sealed partial class GamingViewModel : ObservableObject
         var fan = Max(readings, SensorKind.FanRpm, _ => true);
         HasFan = fan is not null;
         if (fan is double f) MaxFanRpm = Math.Round(f, 0);
+
+        // Ehrlich bleiben: liefert das System keine CPU-Temperatur (häufig bei sehr
+        // neuen CPUs / blockiertem Sensortreiber), das offen anzeigen statt „0 °C".
+        if (IsMonitoring)
+            SensorStatus = HasCpuTemp
+                ? "Live-Überwachung aktiv."
+                : "Live-Überwachung aktiv – die CPU-Temperatur wird von diesem System nicht geliefert " +
+                  "(Sensortreiber/Adminrechte). Die übrigen Werte sind live und korrekt.";
     }
 
     private static void Push(ObservableCollection<double> series, double value)

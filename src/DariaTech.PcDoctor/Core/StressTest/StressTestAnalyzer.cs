@@ -60,12 +60,37 @@ public static class StressTestAnalyzer
             (maxGpuTemp is double gt && gt >= options.GpuTempCriticalC);
 
         var throttling = thermalThrottle || clockThrottle || safetyAborted;
-        var throttleNote = BuildThrottleNote(thermalThrottle, clockThrottle, clockNote, maxCpuTemp, maxGpuTemp, options);
 
-        var severity = safetyAborted ? Severity.Critical : DetermineSeverity(stable, throttling, maxCpuTemp, options);
-        var verdict = safetyAborted
-            ? $"Sicherheitsabschaltung: {safeNote} Der Test wurde zum Schutz der Hardware automatisch gestoppt – Kühlung dringend prüfen."
-            : BuildVerdict(severity, stable, throttling, maxCpuTemp, maxGpuTemp, maxFan);
+        // Wurde die CPU belastet, ihre Temperatur aber nicht gelesen (0/kein Sensor),
+        // darf der Test NICHT „bestanden/grün" melden – das wäre eine Scheinaussage.
+        var cpuTempMissing = options.StressCpu && maxCpuTemp is null;
+
+        var throttleNote = cpuTempMissing
+            ? "CPU-Temperatur nicht auslesbar – zur Drosselung/Kühlung der CPU ist keine belastbare Aussage möglich."
+            : BuildThrottleNote(thermalThrottle, clockThrottle, clockNote, maxCpuTemp, maxGpuTemp, options);
+
+        Severity severity;
+        string verdict;
+        if (safetyAborted)
+        {
+            severity = Severity.Critical;
+            verdict = $"Sicherheitsabschaltung: {safeNote} Der Test wurde zum Schutz der Hardware automatisch gestoppt – Kühlung dringend prüfen.";
+        }
+        else if (cpuTempMissing)
+        {
+            severity = stable ? Severity.Warning : Severity.Critical;
+            var gpu = maxGpuTemp is double g ? $" GPU max {g:N0} °C." : string.Empty;
+            var fan = maxFan is double f ? $" Lüfter max {f:N0} RPM." : string.Empty;
+            verdict = stable
+                ? "Eingeschränkt: Der Test lief stabil, aber die CPU-Temperatur konnte nicht ausgelesen werden " +
+                  "(Sensortreiber/Adminrechte prüfen). Eine belastbare Thermik-Aussage für die CPU ist daher nicht möglich." + gpu + fan
+                : "Instabil – der PC hat den Test nicht fehlerfrei überstanden; zudem war die CPU-Temperatur nicht auslesbar.";
+        }
+        else
+        {
+            severity = DetermineSeverity(stable, throttling, maxCpuTemp, options);
+            verdict = BuildVerdict(severity, stable, throttling, maxCpuTemp, maxGpuTemp, maxFan);
+        }
 
         return new StressTestReport
         {

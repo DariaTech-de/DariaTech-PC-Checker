@@ -49,6 +49,24 @@ public class StressTestAnalyzerTests
     }
 
     [Fact]
+    public void Analyze_CpuLoadedButTempMissing_IsNotGreenPass()
+    {
+        // CPU wird belastet, liefert aber keine Temperatur (0/kein Sensor, hier weggelassen).
+        var samples = new List<StressSample>();
+        for (var i = 0; i < 10; i++)
+            samples.Add(Sample(i,
+                Cpu(SensorKind.Load, 100),
+                Gpu(SensorKind.Temperature, 55)));
+
+        var report = StressTestAnalyzer.Analyze(samples, Opt);
+
+        Assert.Null(report.MaxCpuTempC);
+        Assert.NotEqual(Severity.Ok, report.Severity);       // KEIN grünes „Bestanden"
+        Assert.Equal(Severity.Warning, report.Severity);
+        Assert.Contains("Eingeschränkt", report.Verdict);
+    }
+
+    [Fact]
     public void Analyze_OverheatingCpu_IsCriticalWithThrottling()
     {
         var samples = new List<StressSample>();
