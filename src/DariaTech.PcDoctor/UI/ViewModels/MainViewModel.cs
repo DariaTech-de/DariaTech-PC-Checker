@@ -44,6 +44,7 @@ public sealed partial class MainViewModel : ObservableObject
         GamingViewModel gaming,
         HistoryViewModel history,
         CloneViewModel clone,
+        SymptomViewModel symptoms,
         ILogger<MainViewModel> log)
     {
         _engine = engine;
@@ -56,6 +57,7 @@ public sealed partial class MainViewModel : ObservableObject
         Gaming = gaming;
         History = history;
         Clone = clone;
+        Symptoms = symptoms;
         _log = log;
     }
 
@@ -67,6 +69,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>ViewModel des Tabs „Klonen".</summary>
     public CloneViewModel Clone { get; }
+
+    /// <summary>ViewModel des Tabs „Problemlöser" (Symptom-Assistent).</summary>
+    public SymptomViewModel Symptoms { get; }
 
     public ObservableCollection<AreaResultViewModel> Areas { get; } = new();
     public ObservableCollection<string> FixLog { get; } = new();

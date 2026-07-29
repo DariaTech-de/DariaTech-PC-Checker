@@ -124,6 +124,7 @@ public partial class App : Application
         services.AddSingleton<GamingViewModel>();
         services.AddSingleton<HistoryViewModel>();
         services.AddSingleton<CloneViewModel>();
+        services.AddSingleton<SymptomViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
     }

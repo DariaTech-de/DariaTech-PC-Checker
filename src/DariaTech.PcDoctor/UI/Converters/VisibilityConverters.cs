@@ -22,11 +22,20 @@ public sealed class BoolToVisibilityConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
-/// <summary>Sichtbar, wenn der Wert nicht null ist (für das Detailpanel).</summary>
+/// <summary>
+/// Sichtbar, wenn der Wert vorhanden ist (für Detail-/Hinweisfelder).
+/// Leere oder nur aus Leerzeichen bestehende Texte gelten als „nicht vorhanden" –
+/// sonst erschiene ein leerer Rahmen ohne Inhalt.
+/// </summary>
 public sealed class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is not null ? Visibility.Visible : Visibility.Collapsed;
+        => value switch
+        {
+            null => Visibility.Collapsed,
+            string s => string.IsNullOrWhiteSpace(s) ? Visibility.Collapsed : Visibility.Visible,
+            _ => Visibility.Visible
+        };
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
