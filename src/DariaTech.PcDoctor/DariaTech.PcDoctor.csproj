@@ -32,6 +32,24 @@
     <Resource Include="Assets\logo-mark.png" />
   </ItemGroup>
 
+  <!-- Zugangs-PIN: Salz und Hash werden beim Bauen eingebettet (siehe build\publish.ps1 -Pin).
+       Der PIN selbst steht NIE im Quellcode und ist aus dem Hash nicht rückrechenbar.
+       Ohne diese Werte läuft die App ungeschützt (Entwickler-Build). -->
+  <ItemGroup Condition="'$(PinSalt)' != '' and '$(PinHash)' != ''">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DariaTech.PinSalt</_Parameter1>
+      <_Parameter2>$(PinSalt)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DariaTech.PinHash</_Parameter1>
+      <_Parameter2>$(PinHash)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DariaTech.PinIterations</_Parameter1>
+      <_Parameter2>$(PinIterations)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <!-- Packaging-Standards für `dotnet publish` (siehe build/publish.ps1).
        Greifen nur beim Publish, nicht bei Build/Test. -->
   <PropertyGroup Condition="'$(PublishProtocol)' != '' or '$(_IsPublishing)' == 'true'">

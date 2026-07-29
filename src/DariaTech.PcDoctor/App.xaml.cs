@@ -50,8 +50,41 @@ public partial class App : Application
 
         await _host.StartAsync();
 
+        // Zugangsschutz: Ist dieser Build mit einem PIN versehen, muss er vor dem
+        // Öffnen des Hauptfensters eingegeben werden. Ohne eingebetteten PIN
+        // (Entwickler-Build) startet die App direkt – ein fehlender PIN darf nie
+        // dazu führen, dass sich die Anwendung gar nicht mehr benutzen lässt.
+        if (Core.Security.PinSecret.IsConfigured && !RequestPin())
+        {
+            Log.Information("Zugang verweigert – Anwendung wird beendet.");
+            Shutdown();
+            return;
+        }
+
         var window = _host.Services.GetRequiredService<MainWindow>();
         window.Show();
+    }
+
+    /// <summary>
+    /// Zeigt die PIN-Eingabe. Liefert false, wenn abgebrochen wurde – dann
+    /// beendet sich die Anwendung.
+    /// </summary>
+    private bool RequestPin()
+    {
+        var dialog = _host!.Services.GetRequiredService<PinWindow>();
+        return dialog.ShowDialog() == true;
+    }
+
+    /// <summary>
+    /// Erneute PIN-Abfrage nach Zeitablauf. Liefert false, wenn der Nutzer
+    /// abbricht (dann wird die Anwendung geschlossen).
+    /// </summary>
+    internal static bool RequestPinAgain(IServiceProvider services)
+    {
+        var viewModel = services.GetRequiredService<PinViewModel>();
+        viewModel.SwitchToRelockMode();
+        var dialog = new PinWindow(viewModel);
+        return dialog.ShowDialog() == true;
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -127,6 +160,12 @@ public partial class App : Application
         // Klonen (Datenträger 1:1)
         services.AddSingleton<IPhysicalDiskService, WmiPhysicalDiskService>();
         services.AddSingleton<DiskCloneService>();
+
+        // Zugangsschutz (PIN)
+        services.AddSingleton<PinStateStore>();
+        services.AddSingleton<PinViewModel>();
+        services.AddSingleton(_ => new Core.Security.PinSession());
+        services.AddTransient<PinWindow>();
 
         // UI
         services.AddSingleton<IDialogService, DialogService>();
