@@ -1,108 +1,149 @@
-using System.IO;
+using System.Diagnostics;
 using DariaTech.PcDoctor.Core;
 
 namespace DariaTech.PcDoctor.Fixes;
 
 /// <summary>
-/// Leert die Caches gängiger Browser (Chrome, Edge, Firefox). Aktuell genutzte
-/// Dateien (Browser offen) werden übersprungen. Unkritisch – kein
-/// Wiederherstellungspunkt nötig.
+/// Leert die Zwischenspeicher (Caches) der gängigen Browser – Chrome, Edge,
+/// Brave, Opera, Vivaldi und Firefox – über alle Profile hinweg.
+///
+/// Wichtig für die Verlässlichkeit: Läuft ein Browser, sind seine Cache-Dateien
+/// gesperrt und können nicht gelöscht werden. Dieser Fix erkennt das, prüft nach
+/// dem Aufräumen die verbleibende Cache-Größe und meldet ehrlich, was übrig
+/// blieb und warum – statt fälschlich Erfolg zu melden.
 /// </summary>
 public sealed class ClearAppCacheFix : IFixAction
 {
+    /// <summary>Unterhalb dieser Restgröße gilt der Cache als geleert (Rest sind Steuerdateien).</summary>
+    private const long AcceptableRemainderBytes = 10L * 1024 * 1024;   // 10 MB
+
     public string Title => "App-Caches leeren (Browser)";
+
     public string Description =>
-        "Leert die Zwischenspeicher (Caches) von Google Chrome, Microsoft Edge " +
-        "und Mozilla Firefox. Geöffnete Browser bitte vorher schließen – gesperrte " +
-        "Dateien werden sonst übersprungen.";
+        "Leert die Zwischenspeicher (Caches) von Google Chrome, Microsoft Edge, Brave, Opera, Vivaldi " +
+        "und Mozilla Firefox – über alle Profile hinweg. Lesezeichen, Passwörter, offene Tabs und " +
+        "Verlauf bleiben erhalten; nur zwischengespeicherte Webinhalte werden entfernt (Webseiten laden " +
+        "beim ersten Besuch danach etwas langsamer).\n\n" +
+        "WICHTIG: Laufende Browser sperren ihre Cache-Dateien. Bitte alle Browser vorher schließen – " +
+        "sonst kann der Cache nicht vollständig geleert werden. Die App prüft anschließend nach und " +
+        "meldet, was nicht entfernt werden konnte.";
+
     public bool RequiresRestorePoint => false;
     public bool IsReversible => false;
 
     public Task<FixOutcome> ExecuteAsync(IProgress<string> progress, CancellationToken ct = default)
         => Task.Run(() =>
         {
-            long freed = 0;
-            int deleted = 0, skipped = 0;
+            var targets = BrowserCacheCatalog.Build(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
 
-            foreach (var folder in CacheFolders())
+            if (targets.Count == 0)
             {
-                if (!Directory.Exists(folder)) continue;
-                progress.Report($"Leere Cache: {folder}");
+                const string none = "Keine Browser-Caches gefunden – nichts zu leeren.";
+                progress.Report(none);
+                return new FixOutcome(true, none);
+            }
 
-                foreach (var path in EnumerateSafe(folder))
+            var total = CleanupResult.Empty;
+            long remainingTotal = 0;
+            var blocked = new List<string>();      // Browser, die noch laufen und Reste haben
+            var perBrowser = new List<string>();
+
+            foreach (var target in targets)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var running = RunningProcesses(target);
+                if (running)
+                    progress.Report($"⚠ {target.Name} läuft – gesperrte Dateien können nicht entfernt werden.");
+
+                progress.Report($"Leere Cache: {target.Name} ({target.CacheDirectories.Count} Ordner) …");
+
+                var result = CleanupResult.Empty;
+                foreach (var dir in target.CacheDirectories)
                 {
                     ct.ThrowIfCancellationRequested();
-                    try
-                    {
-                        if (File.Exists(path))
-                        {
-                            var size = new FileInfo(path).Length;
-                            File.SetAttributes(path, FileAttributes.Normal);
-                            File.Delete(path);
-                            freed += size;
-                            deleted++;
-                        }
-                        else if (Directory.Exists(path))
-                        {
-                            Directory.Delete(path, recursive: true);
-                            deleted++;
-                        }
-                    }
-                    catch { skipped++; }
+                    result = result.Add(DirectoryCleaner.ClearContents(dir, ct));
                 }
+
+                // Nachprüfen: Was ist tatsächlich noch da?
+                long remaining = 0;
+                foreach (var dir in target.CacheDirectories)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    remaining += DirectoryCleaner.Size(dir, ct);
+                }
+
+                total = total.Add(result);
+                remainingTotal += remaining;
+
+                var line = $"{target.Name}: {ByteSize.Human(result.FreedBytes)} entfernt";
+                if (remaining > AcceptableRemainderBytes)
+                {
+                    line += $", {ByteSize.Human(remaining)} noch vorhanden";
+                    if (running)
+                    {
+                        line += " (Browser läuft)";
+                        blocked.Add(target.Name);
+                    }
+                }
+                perBrowser.Add(line);
+                progress.Report("  " + line);
             }
 
-            var msg = $"{deleted} Cache-Objekt(e) gelöscht, {freed / 1024d / 1024d:N1} MB freigegeben" +
-                      (skipped > 0 ? $", {skipped} übersprungen (Browser geöffnet?)." : ".");
-            progress.Report(msg);
-            return new FixOutcome(true, msg);
+            return BuildOutcome(progress, total, remainingTotal, blocked, perBrowser);
         }, ct);
 
-    private static IEnumerable<string> CacheFolders()
+    /// <summary>Baut ein ehrliches Ergebnis: Erfolg nur, wenn wirklich kaum Cache übrig ist.</summary>
+    private static FixOutcome BuildOutcome(
+        IProgress<string> progress,
+        CleanupResult total,
+        long remainingTotal,
+        List<string> blocked,
+        List<string> perBrowser)
     {
-        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var summary = $"{ByteSize.Human(total.FreedBytes)} freigegeben ({total.Deleted} Objekte). " +
+                      string.Join(" · ", perBrowser);
 
-        // Chromium-basiert (Chrome/Edge): je Profil mehrere Cache-Ordner.
-        foreach (var userData in new[]
-                 {
-                     Path.Combine(local, "Google", "Chrome", "User Data"),
-                     Path.Combine(local, "Microsoft", "Edge", "User Data"),
-                     Path.Combine(local, "BraveSoftware", "Brave-Browser", "User Data")
-                 })
+        // Nennenswerte Reste + laufende Browser -> das ist KEIN Erfolg.
+        if (remainingTotal > AcceptableRemainderBytes && blocked.Count > 0)
         {
-            if (!Directory.Exists(userData)) continue;
-            foreach (var profile in SafeDirs(userData))
-            {
-                yield return Path.Combine(profile, "Cache");
-                yield return Path.Combine(profile, "Code Cache");
-                yield return Path.Combine(profile, "GPUCache");
-                yield return Path.Combine(profile, "Service Worker", "CacheStorage");
-            }
+            var msg = summary +
+                      $"\n\nNicht vollständig geleert: {ByteSize.Human(remainingTotal)} Cache sind noch " +
+                      $"vorhanden, weil {string.Join(" und ", blocked)} gerade läuft/laufen. " +
+                      "Bitte diese Browser schließen und die Reparatur erneut ausführen.";
+            progress.Report(msg);
+            return new FixOutcome(false, msg);
         }
 
-        // Firefox: je Profil ein cache2-Ordner.
-        var firefox = Path.Combine(local, "Mozilla", "Firefox", "Profiles");
-        if (Directory.Exists(firefox))
-            foreach (var profile in SafeDirs(firefox))
-                yield return Path.Combine(profile, "cache2");
+        if (remainingTotal > AcceptableRemainderBytes)
+        {
+            var msg = summary +
+                      $"\n\nHinweis: {ByteSize.Human(remainingTotal)} konnten nicht entfernt werden " +
+                      "(Dateien in Benutzung oder kein Zugriff). Nach einem Neustart erneut versuchen.";
+            progress.Report(msg);
+            return new FixOutcome(false, msg);
+        }
 
-        // Firefox legt Profile teils auch unter Roaming an.
-        var firefoxRoaming = Path.Combine(roaming, "Mozilla", "Firefox", "Profiles");
-        if (Directory.Exists(firefoxRoaming))
-            foreach (var profile in SafeDirs(firefoxRoaming))
-                yield return Path.Combine(profile, "cache2");
+        var ok = summary + "\n\nCaches vollständig geleert.";
+        progress.Report(ok);
+        return new FixOutcome(true, ok);
     }
 
-    private static IEnumerable<string> SafeDirs(string path)
+    /// <summary>True, wenn mindestens ein Prozess des Browsers läuft.</summary>
+    private static bool RunningProcesses(BrowserCacheTarget target)
     {
-        try { return Directory.EnumerateDirectories(path); }
-        catch { return Array.Empty<string>(); }
-    }
-
-    private static IEnumerable<string> EnumerateSafe(string folder)
-    {
-        try { return Directory.EnumerateFileSystemEntries(folder); }
-        catch { return Array.Empty<string>(); }
+        foreach (var name in target.ProcessNames)
+        {
+            try
+            {
+                var processes = Process.GetProcessesByName(name);
+                foreach (var p in processes) p.Dispose();
+                if (processes.Length > 0) return true;
+            }
+            catch { /* Prozessliste nicht lesbar – als „läuft nicht" behandeln */ }
+        }
+        return false;
     }
 }
