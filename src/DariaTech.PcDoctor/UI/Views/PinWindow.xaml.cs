@@ -1,7 +1,7 @@
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Threading;
 using DariaTech.PcDoctor.UI.ViewModels;
+using Wpf.Ui.Controls;
 
 namespace DariaTech.PcDoctor.UI.Views;
 
@@ -9,10 +9,10 @@ namespace DariaTech.PcDoctor.UI.Views;
 /// Eingabemaske für den Zugangs-PIN. Schließt sich selbst, sobald der PIN
 /// korrekt war (<see cref="Window.DialogResult"/> = true).
 ///
-/// Der PIN wird bewusst über eine <see cref="PasswordBox"/> erfasst (verdeckte
-/// Eingabe) und nur an das ViewModel zur Prüfung übergeben.
+/// Der PIN wird bewusst über eine <see cref="System.Windows.Controls.PasswordBox"/>
+/// erfasst (verdeckte Eingabe) und nur an das ViewModel zur Prüfung übergeben.
 /// </summary>
-public partial class PinWindow : Window
+public partial class PinWindow : FluentWindow
 {
     private readonly PinViewModel _viewModel;
     private readonly DispatcherTimer _timer;
@@ -52,7 +52,7 @@ public partial class PinWindow : Window
     /// </summary>
     private void PinBox_PasswordChanged(object sender, RoutedEventArgs e)
     {
-        if (sender is PasswordBox box) _viewModel.Pin = box.Password;
+        if (sender is System.Windows.Controls.PasswordBox box) _viewModel.Pin = box.Password;
     }
 
     /// <summary>Leert das Eingabefeld (nach Fehlversuch bzw. erneuter Sperre).</summary>

@@ -29,8 +29,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="{x:Static models:CompanyInfo.ProductFull}"
-                     ShowMaximize="False" ShowMinimize="False" />
+        <ui:TitleBar Grid.Row="0" Title="{x:Static models:CompanyInfo.ProductFull}" />
 
         <!-- Marken-Kopf -->
         <Border Grid.Row="1" Background="#0E3B34" Padding="24,20">
