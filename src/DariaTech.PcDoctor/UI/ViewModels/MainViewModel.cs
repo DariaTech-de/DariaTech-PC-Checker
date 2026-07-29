@@ -371,7 +371,20 @@ public sealed partial class MainViewModel : ObservableObject
             "Netzwerk-Qualität" => new[] { typeof(SpeedTestFix), typeof(FlushDnsFix) },
             "Prozessor & Arbeitsspeicher" => new[] { typeof(MemoryDiagnosticFix) },
             "Installierte Programme" => new[] { typeof(RemoveBloatwareFix) },
-            "Windows-Sicherheit" => new[] { typeof(DefenderQuickScanFix) },
+            "Windows-Sicherheit" => new[]
+            {
+                typeof(DefenderQuickScanFix), typeof(DefenderSignatureUpdateFix), typeof(DefenderFullScanFix)
+            },
+            "Schadsoftware-Befunde" => new[]
+            {
+                typeof(DefenderRemoveThreatsFix), typeof(DefenderFullScanFix),
+                typeof(DefenderOfflineScanFix), typeof(SafetyScannerFix)
+            },
+            "Befall-Indikatoren" => new[]
+            {
+                typeof(DefenderSignatureUpdateFix), typeof(DefenderFullScanFix),
+                typeof(ResetHostsFileFix), typeof(DefenderOfflineScanFix), typeof(SafetyScannerFix)
+            },
             "Windows-Updates" => new[] { typeof(WindowsUpdateRepairFix) },
             "Programmabstürze (letzte 30 Tage)" => new[]
             {

@@ -71,6 +71,8 @@ public partial class App : Application
         services.AddSingleton<ICheck, BatteryCheck>();
         services.AddSingleton<ICheck, SecurityCheck>();
         services.AddSingleton<ICheck, BackupStatusCheck>();
+        services.AddSingleton<ICheck, ThreatHistoryCheck>();
+        services.AddSingleton<ICheck, MalwareIndicatorCheck>();
         services.AddSingleton<ICheck, WindowsUpdateCheck>();
         services.AddSingleton<ICheck, StartupCheck>();
         services.AddSingleton<ICheck, InstalledProgramsCheck>();
@@ -101,6 +103,13 @@ public partial class App : Application
         services.AddSingleton<IFixAction, RemoveBloatwareFix>();
         services.AddSingleton<IFixAction, WindowsSearchResetFix>();
         services.AddSingleton<IFixAction, TextInputRestartFix>();
+        // Schadsoftware: Defender als Engine steuern + Zweitmeinung + hosts-Reparatur
+        services.AddSingleton<IFixAction, DefenderSignatureUpdateFix>();
+        services.AddSingleton<IFixAction, DefenderFullScanFix>();
+        services.AddSingleton<IFixAction, DefenderRemoveThreatsFix>();
+        services.AddSingleton<IFixAction, DefenderOfflineScanFix>();
+        services.AddSingleton<IFixAction, SafetyScannerFix>();
+        services.AddSingleton<IFixAction, ResetHostsFileFix>();
 
         // Core-Dienste
         services.AddSingleton<DiagnosticEngine>();

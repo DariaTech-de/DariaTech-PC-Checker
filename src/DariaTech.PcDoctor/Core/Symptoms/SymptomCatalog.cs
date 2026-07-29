@@ -32,6 +32,8 @@ public static class SymptomCatalog
     private const string AreaWindowsUpdate = "Windows-Updates";
     private const string AreaSecurity = "Windows-Sicherheit";
     private const string AreaBackup = "Datensicherung";
+    private const string AreaThreats = "Schadsoftware-Befunde";
+    private const string AreaIndicators = "Befall-Indikatoren";
 
     public static IReadOnlyList<Symptom> All { get; } = new List<Symptom>
     {
@@ -149,6 +151,33 @@ public static class SymptomCatalog
                     "Update-Zwischenspeicher. Erst Platz prüfen/freigeben, dann " +
                     "„Windows-Update reparieren“ ausführen (setzt die Update-Komponenten zurück, " +
                     "ein Wiederherstellungspunkt wird vorher angelegt)."),
+
+        new(
+            Id: "malware",
+            Title: "Verdacht auf Virus / Werbe-Popups / PC verhält sich seltsam",
+            Question: "Es erscheinen Werbefenster, die Startseite wurde geändert oder der PC verhält sich " +
+                      "merkwürdig – Verdacht auf Schadsoftware.",
+            CheckAreas: new[]
+            {
+                AreaThreats, AreaIndicators, AreaSecurity, AreaStartup, AreaPrograms, AreaCrashes
+            },
+            FixTypes: new[]
+            {
+                typeof(DefenderSignatureUpdateFix),   // ohne aktuelle Signaturen ist alles wertlos
+                typeof(DefenderFullScanFix),
+                typeof(DefenderRemoveThreatsFix),
+                typeof(ResetHostsFileFix),
+                typeof(DefenderOfflineScanFix),       // hartnäckige Fälle (Neustart)
+                typeof(SafetyScannerFix)              // unabhängige Zweitmeinung
+            },
+            Advice: "Feste Reihenfolge: 1) „Virensignaturen aktualisieren“ – ohne aktuelle Signaturen " +
+                    "findet kein Scan neue Schädlinge. 2) „Defender-Vollscan“. 3) Bei Funden " +
+                    "„Erkannte Bedrohungen entfernen“. 4) Kommt die Bedrohung wieder oder ist der " +
+                    "Echtzeitschutz aus, „Defender-Offlinescan“ (Neustart, entfernt tief verankerte " +
+                    "Schädlinge). 5) Als unabhängige Zweitmeinung den „Microsoft Safety Scanner“. " +
+                    "Wichtig: Die Kachel „Befall-Indikatoren“ prüfen – abgeschalteter Schutz, " +
+                    "Scan-Ausnahmen und manipulierte hosts-Datei sind starke Befallzeichen, die ein " +
+                    "Scan allein nicht meldet."),
 
         new(
             Id: "data-safety",
