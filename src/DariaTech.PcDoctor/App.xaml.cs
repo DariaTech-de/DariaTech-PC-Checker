@@ -78,6 +78,8 @@ public partial class App : Application
         services.AddSingleton<ICheck, NetworkCheck>();
         services.AddSingleton<ICheck, NetworkQualityCheck>();
         services.AddSingleton<ICheck, EventLogCheck>();
+        services.AddSingleton<ICheck, AppCrashCheck>();
+        services.AddSingleton<ICheck, UpdateStabilityCheck>();
 
         // Fixes (bereichsbezogen; DisableStartupItemFix wird je Eintrag vom Check erzeugt)
         services.AddSingleton<IFixAction, ClearTempFilesFix>();
@@ -97,6 +99,8 @@ public partial class App : Application
         services.AddSingleton<IFixAction, GroupPolicyUpdateFix>();
         services.AddSingleton<IFixAction, MemoryDiagnosticFix>();
         services.AddSingleton<IFixAction, RemoveBloatwareFix>();
+        services.AddSingleton<IFixAction, WindowsSearchResetFix>();
+        services.AddSingleton<IFixAction, TextInputRestartFix>();
 
         // Core-Dienste
         services.AddSingleton<DiagnosticEngine>();

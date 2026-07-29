@@ -368,6 +368,15 @@ public sealed partial class MainViewModel : ObservableObject
             "Installierte Programme" => new[] { typeof(RemoveBloatwareFix) },
             "Windows-Sicherheit" => new[] { typeof(DefenderQuickScanFix) },
             "Windows-Updates" => new[] { typeof(WindowsUpdateRepairFix) },
+            "Programmabstürze (letzte 30 Tage)" => new[]
+            {
+                typeof(WindowsSearchResetFix), typeof(TextInputRestartFix),
+                typeof(SystemFileRepairFix), typeof(RestartExplorerFix)
+            },
+            "Updates & Stabilität" => new[]
+            {
+                typeof(SystemFileRepairFix), typeof(WindowsUpdateRepairFix), typeof(WindowsSearchResetFix)
+            },
             "Akku" => new[] { typeof(BatteryReportFix) },
             _ => Array.Empty<Type>()
         };
