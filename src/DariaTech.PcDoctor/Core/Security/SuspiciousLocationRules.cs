@@ -74,6 +74,15 @@ public static class SuspiciousLocationRules
         return null;
     }
 
+    /// <summary>
+    /// Programmpfad bis zur ausführbaren Endung – erlaubt Leerzeichen im Pfad
+    /// („C:\Program Files\…"). Ein einfaches Trennen am ersten Leerzeichen wäre
+    /// falsch und hätte den Dateinamen verstümmelt.
+    /// </summary>
+    private static readonly Regex ExecutablePath = new(
+        @"^(?<path>.*?\.(?:exe|com|scr|pif|bat|cmd|js|vbs|dll|msi))(?:\s|$)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     /// <summary>Liest den Dateinamen aus einer Befehlszeile (Anführungszeichen/Parameter werden entfernt).</summary>
     public static string ExtractFileName(string command)
     {
@@ -85,9 +94,14 @@ public static class SuspiciousLocationRules
             var end = value.IndexOf('"', 1);
             if (end > 1) value = value[1..end];
         }
+        else if (ExecutablePath.Match(value) is { Success: true } match)
+        {
+            // Bis zur ausführbaren Endung schneiden – Leerzeichen im Pfad bleiben erhalten.
+            value = match.Groups["path"].Value;
+        }
         else
         {
-            // Sonst am ersten Leerzeichen nach einer ausführbaren Endung trennen.
+            // Keine erkennbare Endung: notfalls am ersten Leerzeichen trennen.
             var space = value.IndexOf(' ');
             if (space > 0) value = value[..space];
         }
