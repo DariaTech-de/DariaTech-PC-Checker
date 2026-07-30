@@ -1,11 +1,20 @@
 name: Release
 
-# Baut die portable Single-File-.exe und stellt sie als Download-Artefakt bereit.
-# Auslösen: manuell (Actions → Release → Run workflow) oder durch einen Tag v*.
+# Baut die portable Single-File-.exe.
+#   * Manueller Start (Actions → Release → Run workflow): nur Download-Artefakt.
+#   * Tag v* (z. B. v1.0.0): zusätzlich eine GitHub-Release-Seite mit .exe und
+#     dem Mac-Werkzeug als Anhang – das ist der Link, den man weitergeben kann.
+#
+# WICHTIG: Diese .exe wird OHNE PIN gebaut. Das Geheimnis gehört nicht auf
+# GitHub. Die geschützte Fassung entsteht lokal mit
+#   build\publish.ps1 -Pin (Read-Host -AsSecureString "PIN")
 on:
   workflow_dispatch:
   push:
     tags: ['v*']
+
+permissions:
+  contents: write        # nötig, um die Release-Seite anzulegen
 
 jobs:
   publish:
@@ -35,3 +44,35 @@ jobs:
           name: DariaTech-PC-Doktor-win-x64
           path: publish/DariaTech.PcDoctor.exe
           if-no-files-found: error
+
+      # --- Ab hier nur bei einem Tag: fertige Release-Seite mit Downloads ---
+
+      - name: Mac-Werkzeug packen
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: Compress-Archive -Path mac/* -DestinationPath DariaTech-Mac-Doktor.zip
+
+      - name: Prüfsummen erzeugen
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $lines = @()
+          foreach ($f in @('publish/DariaTech.PcDoctor.exe', 'DariaTech-Mac-Doktor.zip')) {
+            $h = (Get-FileHash $f -Algorithm SHA256).Hash
+            $lines += "$h  $(Split-Path $f -Leaf)"
+          }
+          $lines | Set-Content -Path SHA256SUMS.txt -Encoding utf8
+          Get-Content SHA256SUMS.txt
+
+      - name: Release-Seite anlegen
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$env:GITHUB_REF_NAME"
+          "publish/DariaTech.PcDoctor.exe#DariaTech-PC-Doktor.exe (Windows, portabel)"
+          "DariaTech-Mac-Doktor.zip#DariaTech Mac-Doktor (macOS)"
+          "SHA256SUMS.txt#Prüfsummen"
+          --title "DariaTech PC-Doktor $env:GITHUB_REF_NAME"
+          --notes-file RELEASE_NOTES.md
