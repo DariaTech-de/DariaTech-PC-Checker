@@ -10,6 +10,11 @@ name: Release
 #   build\publish.ps1 -Pin (Read-Host -AsSecureString "PIN")
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version für die Release-Seite, z. B. v1.0.0 (leer lassen = nur Artefakt bauen)'
+        required: false
+        default: ''
   push:
     tags: ['v*']
 
@@ -45,15 +50,29 @@ jobs:
           path: publish/DariaTech.PcDoctor.exe
           if-no-files-found: error
 
-      # --- Ab hier nur bei einem Tag: fertige Release-Seite mit Downloads ---
+      # --- Ab hier: fertige Release-Seite mit Downloads ---
+      # Entweder durch einen Tag ausgelöst oder manuell mit angegebener Version.
+      # Im zweiten Fall legt die GitHub-CLI den Tag selbst an – praktisch, wenn
+      # sich lokal keine Tags pushen lassen.
+
+      - name: Version bestimmen
+        id: ver
+        shell: pwsh
+        run: |
+          $tag = if ("${{ github.ref_type }}" -eq 'tag') { "${{ github.ref_name }}" }
+                 else { "${{ inputs.tag }}" }
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "release=$([string]::IsNullOrWhiteSpace($tag) -eq $false)" |
+            Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Release-Tag: '$tag'"
 
       - name: Mac-Werkzeug packen
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.ver.outputs.release == 'True'
         shell: pwsh
         run: Compress-Archive -Path mac/* -DestinationPath DariaTech-Mac-Doktor.zip
 
       - name: Prüfsummen erzeugen
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.ver.outputs.release == 'True'
         shell: pwsh
         run: |
           $lines = @()
@@ -65,14 +84,16 @@ jobs:
           Get-Content SHA256SUMS.txt
 
       - name: Release-Seite anlegen
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.ver.outputs.release == 'True'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create "$env:GITHUB_REF_NAME"
-          "publish/DariaTech.PcDoctor.exe#DariaTech-PC-Doktor.exe (Windows, portabel)"
-          "DariaTech-Mac-Doktor.zip#DariaTech Mac-Doktor (macOS)"
-          "SHA256SUMS.txt#Prüfsummen"
-          --title "DariaTech PC-Doktor $env:GITHUB_REF_NAME"
-          --notes-file RELEASE_NOTES.md
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          gh release create "$env:TAG" `
+            --target "$env:GITHUB_SHA" `
+            --title "DariaTech PC-Doktor $env:TAG" `
+            --notes-file RELEASE_NOTES.md `
+            "publish/DariaTech.PcDoctor.exe#DariaTech-PC-Doktor.exe (Windows, portabel)" `
+            "DariaTech-Mac-Doktor.zip#DariaTech Mac-Doktor (macOS)" `
+            "SHA256SUMS.txt#Prüfsummen"
