@@ -47,6 +47,21 @@ Bereits umgesetzt:
 > unsignierte Builds können daher SmartScreen-/Antivirus-Warnungen auslösen –
 > vor Auslieferung **signieren** (siehe `RELEASE.md`).
 
+## macOS: DariaTech Mac-Doktor
+
+Für Kunden mit Mac liegt unter [`mac/`](./mac/README.md) ein eigenes Werkzeug –
+ein Shell-Skript ohne Installation, das dieselben Ampelregeln, denselben
+Gesundheits-Score und dasselbe Berichtslayout verwendet:
+
+```bash
+bash mac/dariatech-mac-check.sh --open
+```
+
+Die WPF-App selbst läuft **nicht** auf macOS (WMI, Registry, BitLocker,
+Defender und Wiederherstellungspunkte existieren dort nicht). Details, Grenzen
+und die Cache-Regeln stehen in [`mac/README.md`](./mac/README.md).
+Selbsttest (läuft auch unter Linux, deshalb Teil der CI): `bash mac/selftest.sh`
+
 ## Entwicklung
 
 ```bash

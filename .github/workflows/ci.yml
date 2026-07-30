@@ -28,3 +28,20 @@ jobs:
 
       - name: Test
         run: dotnet test DariaTech.PcDoctor.sln -c Release --no-build --verbosity normal
+
+  mac-tool:
+    name: Mac-Doktor (Selbsttest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntaxprüfung
+        run: |
+          for f in mac/dariatech-mac-check.sh mac/selftest.sh mac/lib/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: Selbsttest (Regeln, Bericht, Aufräum-Schranke)
+        run: bash mac/selftest.sh
