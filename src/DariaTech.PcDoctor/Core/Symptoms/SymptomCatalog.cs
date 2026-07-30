@@ -34,6 +34,8 @@ public static class SymptomCatalog
     private const string AreaBackup = "Datensicherung";
     private const string AreaThreats = "Schadsoftware-Befunde";
     private const string AreaIndicators = "Befall-Indikatoren";
+    private const string AreaDevices = "Geräte nach Bereich";
+    private const string AreaBattery = "Akku";
 
     public static IReadOnlyList<Symptom> All { get; } = new List<Symptom>
     {
@@ -151,6 +153,96 @@ public static class SymptomCatalog
                     "Update-Zwischenspeicher. Erst Platz prüfen/freigeben, dann " +
                     "„Windows-Update reparieren“ ausführen (setzt die Update-Komponenten zurück, " +
                     "ein Wiederherstellungspunkt wird vorher angelegt)."),
+
+        new(
+            Id: "audio",
+            Title: "Kein Ton / Mikrofon oder Kopfhörer gehen nicht",
+            Question: "Es kommt kein Ton, das Mikrofon wird nicht erkannt oder Kopfhörer funktionieren nicht.",
+            CheckAreas: new[] { AreaDevices, AreaDrivers, AreaCrashes, AreaUpdateStability },
+            FixTypes: new[] { typeof(RestartAudioServiceFix), typeof(SystemFileRepairFix) },
+            Advice: "Zuerst „Audiodienst neu starten“ – das behebt den plötzlichen Tonausfall meistens " +
+                    "sofort. Prüfen Sie außerdem, ob im Lautsprechersymbol das richtige Wiedergabegerät " +
+                    "gewählt ist (häufigste Ursache nach einem Update). Meldet die Kachel „Geräte nach " +
+                    "Bereich“ ein deaktiviertes Audiogerät, dieses im Geräte-Manager aktivieren; bleibt " +
+                    "es dabei, den Audiotreiber deinstallieren und neu starten."),
+
+        new(
+            Id: "bluetooth",
+            Title: "Bluetooth verbindet nicht",
+            Question: "Bluetooth-Geräte werden nicht gefunden oder verbinden sich nicht mehr.",
+            CheckAreas: new[] { AreaDevices, AreaDrivers, AreaUpdateStability },
+            FixTypes: new[] { typeof(RestartBluetoothServiceFix), typeof(SystemFileRepairFix) },
+            Advice: "Zuerst „Bluetooth-Dienst neu starten“, dann das Gerät erneut koppeln. Fehlt die " +
+                    "Bluetooth-Schaltfläche ganz, liegt es meist am Treiber oder Bluetooth ist im " +
+                    "BIOS/UEFI abgeschaltet – die Kachel „Geräte nach Bereich“ zeigt, ob überhaupt ein " +
+                    "Bluetooth-Adapter erkannt wird. Herstellertreiber (Intel, Lenovo, HP) sind hier " +
+                    "zuverlässiger als die von Windows."),
+
+        new(
+            Id: "startmenu",
+            Title: "Startmenü oder Taskleiste reagiert nicht",
+            Question: "Das Startmenü öffnet sich nicht, die Taskleiste reagiert nicht auf Klicks.",
+            CheckAreas: new[] { AreaCrashes, AreaUpdateStability, AreaEventLog, AreaSystem },
+            FixTypes: new[]
+            {
+                typeof(RestartStartMenuFix),
+                typeof(RestartExplorerFix),
+                typeof(SystemFileRepairFix),
+                typeof(WindowsSearchResetFix)
+            },
+            Advice: "Reihenfolge: „Startmenü & Taskleiste neu starten“ → „Explorer neu starten“ → " +
+                    "„Systemdateien reparieren“. Die Kachel „Programmabstürze“ nennt, welcher " +
+                    "Oberflächen-Prozess abstürzt – das ist der beste Hinweis. Beginnt es direkt nach " +
+                    "einem Update, zusätzlich die Kachel „Updates & Stabilität“ beachten."),
+
+        new(
+            Id: "usb-device",
+            Title: "USB-Gerät wird nicht erkannt",
+            Question: "Ein USB-Stick, Drucker oder anderes Gerät wird nicht erkannt.",
+            CheckAreas: new[] { AreaDevices, AreaDrivers, AreaEventLog },
+            FixTypes: new[] { typeof(SystemFileRepairFix) },
+            Advice: "Erst das Einfache ausschließen: anderen Anschluss und anderes Kabel testen, bei " +
+                    "USB-Hubs direkt am PC anstecken. Die Kachel „Geräte nach Bereich“ zeigt, ob Windows " +
+                    "das Gerät sieht und mit welchem Fehler. Ein deaktiviertes Gerät (Code 22) lässt sich " +
+                    "im Geräte-Manager mit zwei Klicks aktivieren; bei Code 43 meldet die Hardware selbst " +
+                    "einen Defekt – dann das Gerät an einem anderen PC gegenprüfen."),
+
+        new(
+            Id: "battery",
+            Title: "Akku hält nicht durch oder lädt nicht",
+            Question: "Der Akku ist schnell leer, lädt nicht oder das Notebook geht ohne Kabel sofort aus.",
+            CheckAreas: new[] { AreaBattery, AreaDevices, AreaSystem, AreaEventLog },
+            FixTypes: new[] { typeof(BatteryReportFix), typeof(PowerPlanHighPerformanceFix) },
+            Advice: "Die Kachel „Akku“ zeigt den Verschleiß: Über 40 % Kapazitätsverlust ist ein Tausch " +
+                    "fällig – daran ändert keine Einstellung etwas. Für die Beratung den „Akku-Bericht“ " +
+                    "erstellen (zeigt Ladezyklen und Kapazitätsverlauf, gut zum Vorzeigen). Lädt gar " +
+                    "nichts, prüfen: richtiges Netzteil, Ladebuchse, und ob unter „Geräte nach Bereich“ " +
+                    "ein Akku-Treiberproblem gemeldet wird."),
+
+        new(
+            Id: "display",
+            Title: "Bildschirm flackert oder falsche Auflösung",
+            Question: "Das Bild flackert, ist unscharf, die Auflösung stimmt nicht oder der zweite " +
+                      "Bildschirm wird nicht erkannt.",
+            CheckAreas: new[] { AreaDevices, AreaDrivers, AreaCrashes, AreaUpdateStability },
+            FixTypes: new[] { typeof(SystemFileRepairFix) },
+            Advice: "Fast immer der Grafiktreiber: direkt beim Hersteller laden (NVIDIA, AMD, Intel) statt " +
+                    "über Windows-Update – die Windows-Fassung ist oft älter und Ursache von Flackern. " +
+                    "Vorher Kabel und Anschluss prüfen (bei Flackern oft ein defektes HDMI-/DisplayPort-" +
+                    "Kabel). Bei einem Notebook mit zwei Grafikchips zusätzlich prüfen, ob der externe " +
+                    "Bildschirm am richtigen Anschluss hängt."),
+
+        new(
+            Id: "office",
+            Title: "Outlook/Office startet nicht oder hängt",
+            Question: "Outlook, Word oder Excel startet nicht, friert ein oder stürzt ab.",
+            CheckAreas: new[] { AreaCrashes, AreaUpdateStability, AreaPrograms, AreaDiskSpace },
+            FixTypes: new[] { typeof(SystemFileRepairFix), typeof(ClearTempFilesFix) },
+            Advice: "Die Kachel „Programmabstürze“ nennt das verursachende Modul – oft ein Add-In. " +
+                    "Erster Test: Office im abgesicherten Modus starten (Windows-Taste + R → " +
+                    "„outlook /safe“ bzw. „winword /safe“). Startet es dort, liegt es an einem Add-In. " +
+                    "Sonst über Einstellungen → Apps → Microsoft 365 → „Ändern“ die Office-" +
+                    "Schnellreparatur ausführen (bei Bedarf danach die Online-Reparatur)."),
 
         new(
             Id: "malware",

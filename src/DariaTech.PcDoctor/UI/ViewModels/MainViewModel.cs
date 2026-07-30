@@ -395,7 +395,12 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 typeof(SystemFileRepairFix), typeof(WindowsUpdateRepairFix), typeof(WindowsSearchResetFix)
             },
-            "Akku" => new[] { typeof(BatteryReportFix) },
+            "Akku" => new[] { typeof(BatteryReportFix), typeof(PowerPlanHighPerformanceFix) },
+            "Geräte nach Bereich" => new[]
+            {
+                typeof(RestartAudioServiceFix), typeof(RestartBluetoothServiceFix),
+                typeof(PrinterSpoolerResetFix), typeof(SystemFileRepairFix)
+            },
             _ => Array.Empty<Type>()
         };
         return _allFixes.Where(f => wanted.Contains(f.GetType())).ToList();

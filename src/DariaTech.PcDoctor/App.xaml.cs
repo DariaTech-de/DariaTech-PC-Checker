@@ -110,6 +110,7 @@ public partial class App : Application
         services.AddSingleton<ICheck, StartupCheck>();
         services.AddSingleton<ICheck, InstalledProgramsCheck>();
         services.AddSingleton<ICheck, DriverDeviceCheck>();
+        services.AddSingleton<ICheck, PeripheralDeviceCheck>();
         services.AddSingleton<ICheck, NetworkCheck>();
         services.AddSingleton<ICheck, NetworkQualityCheck>();
         services.AddSingleton<ICheck, EventLogCheck>();
@@ -143,6 +144,10 @@ public partial class App : Application
         services.AddSingleton<IFixAction, DefenderOfflineScanFix>();
         services.AddSingleton<IFixAction, SafetyScannerFix>();
         services.AddSingleton<IFixAction, ResetHostsFileFix>();
+        // Geräte-/Oberflächen-Reparaturen (Audio, Bluetooth, Startmenü)
+        services.AddSingleton<IFixAction, RestartAudioServiceFix>();
+        services.AddSingleton<IFixAction, RestartBluetoothServiceFix>();
+        services.AddSingleton<IFixAction, RestartStartMenuFix>();
 
         // Core-Dienste
         services.AddSingleton<DiagnosticEngine>();
