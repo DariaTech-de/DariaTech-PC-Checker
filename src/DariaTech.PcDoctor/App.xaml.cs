@@ -104,6 +104,8 @@ public partial class App : Application
         services.AddSingleton<ICheck, BatteryCheck>();
         services.AddSingleton<ICheck, SecurityCheck>();
         services.AddSingleton<ICheck, BackupStatusCheck>();
+        services.AddSingleton<ICheck, BitLockerCheck>();
+        services.AddSingleton<ICheck, SystemRestoreCheck>();
         services.AddSingleton<ICheck, ThreatHistoryCheck>();
         services.AddSingleton<ICheck, MalwareIndicatorCheck>();
         services.AddSingleton<ICheck, WindowsUpdateCheck>();
@@ -144,6 +146,9 @@ public partial class App : Application
         services.AddSingleton<IFixAction, DefenderOfflineScanFix>();
         services.AddSingleton<IFixAction, SafetyScannerFix>();
         services.AddSingleton<IFixAction, ResetHostsFileFix>();
+        // Datensicherheit vor Reparaturen
+        services.AddSingleton<IFixAction, EnableSystemRestoreFix>();
+        services.AddSingleton<IFixAction, BitLockerRecoveryKeyFix>();
         // Geräte-/Oberflächen-Reparaturen (Audio, Bluetooth, Startmenü)
         services.AddSingleton<IFixAction, RestartAudioServiceFix>();
         services.AddSingleton<IFixAction, RestartBluetoothServiceFix>();

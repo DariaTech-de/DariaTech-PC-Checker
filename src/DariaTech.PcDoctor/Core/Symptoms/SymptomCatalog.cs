@@ -32,6 +32,8 @@ public static class SymptomCatalog
     private const string AreaWindowsUpdate = "Windows-Updates";
     private const string AreaSecurity = "Windows-Sicherheit";
     private const string AreaBackup = "Datensicherung";
+    private const string AreaBitLocker = "Laufwerksverschlüsselung (BitLocker)";
+    private const string AreaRestore = "Systemwiederherstellung";
     private const string AreaThreats = "Schadsoftware-Befunde";
     private const string AreaIndicators = "Befall-Indikatoren";
     private const string AreaDevices = "Geräte nach Bereich";
@@ -275,8 +277,8 @@ public static class SymptomCatalog
             Id: "data-safety",
             Title: "Wichtige Daten sind in Gefahr / kein Backup",
             Question: "Der PC macht Probleme und es ist unklar, ob die Daten gesichert sind.",
-            CheckAreas: new[] { AreaBackup, AreaDiskHealth, AreaDiskDetail, AreaDiskSpace },
-            FixTypes: Array.Empty<Type>(),
+            CheckAreas: new[] { AreaBackup, AreaBitLocker, AreaRestore, AreaDiskHealth, AreaDiskDetail, AreaDiskSpace },
+            FixTypes: new[] { typeof(BitLockerRecoveryKeyFix), typeof(EnableSystemRestoreFix) },
             Advice: "Vor allen weiteren Reparaturen klären: Gibt es eine Sicherung (Kachel " +
                     "„Datensicherung“)? Meldet „Datenträger – Gesundheit“ einen Ausfall, zuerst die " +
                     "Daten sichern bzw. den Datenträger über den Tab „Klonen“ 1:1 kopieren – " +

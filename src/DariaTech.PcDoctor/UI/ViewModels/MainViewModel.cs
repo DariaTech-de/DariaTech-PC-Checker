@@ -371,6 +371,8 @@ public sealed partial class MainViewModel : ObservableObject
             "Netzwerk-Qualität" => new[] { typeof(SpeedTestFix), typeof(FlushDnsFix) },
             "Prozessor & Arbeitsspeicher" => new[] { typeof(MemoryDiagnosticFix) },
             "Installierte Programme" => new[] { typeof(RemoveBloatwareFix) },
+            "Laufwerksverschlüsselung (BitLocker)" => new[] { typeof(BitLockerRecoveryKeyFix) },
+            "Systemwiederherstellung" => new[] { typeof(EnableSystemRestoreFix) },
             "Windows-Sicherheit" => new[]
             {
                 typeof(DefenderQuickScanFix), typeof(DefenderSignatureUpdateFix), typeof(DefenderFullScanFix)
