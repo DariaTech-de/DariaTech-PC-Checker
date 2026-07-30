@@ -271,7 +271,9 @@ public sealed partial class MainViewModel : ObservableObject
         FixOutcome outcome;
         try
         {
-            outcome = await _repairService.RunAsync(fix, progress, _cts.Token).ConfigureAwait(true);
+            outcome = await _repairService
+                .RunAsync(fix, progress, _cts.Token, AskProceedWithoutRestorePoint)
+                .ConfigureAwait(true);
         }
         catch (Exception ex)
         {
@@ -293,6 +295,19 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     private bool CanRunFix() => !IsScanning && !IsFixRunning;
+
+    /// <summary>
+    /// Rückfrage, wenn kein Wiederherstellungspunkt angelegt werden konnte. Ohne
+    /// ausdrückliches „Ja" wird die Reparatur nicht ausgeführt – die Zusage im
+    /// Bestätigungsdialog muss halten.
+    /// </summary>
+    private bool AskProceedWithoutRestorePoint(string reason)
+        => _dialogs.Confirm("Kein Wiederherstellungspunkt möglich",
+            $"{reason}\n\n" +
+            "Damit gibt es KEINE Rückfallebene, falls die Reparatur Probleme macht.\n\n" +
+            "Empfehlung: abbrechen und zuerst „Systemwiederherstellung einschalten“ ausführen " +
+            "(Kachel „Systemwiederherstellung“).\n\n" +
+            "Trotzdem ohne Wiederherstellungspunkt fortfahren?");
 
     private async Task RecheckAreaAsync(AreaResultViewModel area)
     {

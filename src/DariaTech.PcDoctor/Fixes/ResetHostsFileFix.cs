@@ -63,11 +63,16 @@ public sealed class ResetHostsFileFix : IFixAction
             if (!File.Exists(hostsPath))
                 return new FixOutcome(false, $"Die hosts-Datei wurde nicht gefunden ({hostsPath}).");
 
-            // 1. Sicherungskopie
+            // 1. Sicherungskopie – NIE eine bestehende überschreiben. Beim zweiten
+            //    Durchlauf wäre sonst der ursprüngliche Inhalt für immer weg und die
+            //    Zusage „umkehrbar" nur noch auf dem Papier wahr.
             var backupPath = hostsPath + ".dariatech-backup";
+            if (File.Exists(backupPath))
+                backupPath = $"{hostsPath}.dariatech-backup_{DateTime.Now:yyyyMMdd_HHmmss}";
+
             try
             {
-                File.Copy(hostsPath, backupPath, overwrite: true);
+                File.Copy(hostsPath, backupPath, overwrite: false);
                 progress.Report($"Sicherungskopie angelegt: {backupPath}");
             }
             catch (Exception ex)
@@ -102,7 +107,7 @@ public sealed class ResetHostsFileFix : IFixAction
             }
             catch { /* Prüfung optional */ }
 
-            var msg = "hosts-Datei zurückgesetzt (Sicherungskopie: hosts.dariatech-backup). " +
+            var msg = $"hosts-Datei zurückgesetzt (Sicherungskopie: {Path.GetFileName(backupPath)}). " +
                       "Zur Sicherheit anschließend „DNS-Cache leeren“ ausführen.";
             progress.Report(msg);
             return new FixOutcome(true, msg);

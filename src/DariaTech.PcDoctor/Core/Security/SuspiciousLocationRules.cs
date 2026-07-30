@@ -48,11 +48,22 @@ public static class SuspiciousLocationRules
 
         var command = commandOrPath.Trim();
         var lower = command.ToLowerInvariant();
-        var fileName = ExtractFileName(lower);
+        var executablePath = ExtractExecutablePath(lower);
+        var fileName = LastSegment(executablePath);
 
-        foreach (var (fragment, reason) in SuspiciousFolders)
-            if (lower.Contains(fragment, StringComparison.Ordinal))
-                return reason;
+        // Ordnerprüfung nur auf PROGRAMMPFADEN, nicht auf der ganzen Befehlszeile:
+        // Sonst schlägt die Regel auch an, wenn ein sauber installiertes Programm
+        // lediglich einen Parameter mit „\downloads\“ oder „\temp\“ mitgibt (etwa
+        // eine Ausgabe- oder Protokolldatei) – ein Fehlalarm, der das Vertrauen in
+        // alle übrigen Befunde beschädigt.
+        //
+        // Geprüft werden aber ALLE programmartigen Pfade der Zeile, nicht nur der
+        // erste. Sonst entwischt die verbreitete Tarnung über einen Zwischenstarter
+        // („cmd.exe /c C:\…\Temp\evil.exe“).
+        foreach (var candidate in ExecutablePathsIn(lower, executablePath))
+            foreach (var (fragment, reason) in SuspiciousFolders)
+                if (candidate.Contains(fragment, StringComparison.Ordinal))
+                    return reason;
 
         if (DoubleExtension.IsMatch(fileName))
             return "Doppelte Dateiendung (z. B. „…pdf.exe“) – klassische Tarnung von Schadsoftware.";
@@ -83,8 +94,34 @@ public static class SuspiciousLocationRules
         @"^(?<path>.*?\.(?:exe|com|scr|pif|bat|cmd|js|vbs|dll|msi))(?:\s|$)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    /// <summary>Alle programmartigen Pfade einer Befehlszeile (Zwischenstarter mitgedacht).</summary>
+    private static readonly Regex AnyExecutablePath = new(
+        @"[a-z]:\\[^""<>|]*?\.(?:exe|com|scr|pif|bat|cmd|js|vbs|msi)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static IEnumerable<string> ExecutablePathsIn(string lowerCommand, string primary)
+    {
+        yield return primary;
+        foreach (Match m in AnyExecutablePath.Matches(lowerCommand))
+            yield return m.Value;
+    }
+
     /// <summary>Liest den Dateinamen aus einer Befehlszeile (Anführungszeichen/Parameter werden entfernt).</summary>
     public static string ExtractFileName(string command)
+        => LastSegment(ExtractExecutablePath(command));
+
+    /// <summary>Letzter Pfadteil (Dateiname) eines Pfads.</summary>
+    private static string LastSegment(string value)
+    {
+        var slash = value.LastIndexOfAny(new[] { '\\', '/' });
+        return slash >= 0 && slash < value.Length - 1 ? value[(slash + 1)..] : value;
+    }
+
+    /// <summary>
+    /// Programmpfad aus einer Befehlszeile – ohne Anführungszeichen und ohne
+    /// Parameter. Grundlage für die Ordner- und Endungsprüfung.
+    /// </summary>
+    public static string ExtractExecutablePath(string command)
     {
         var value = command.Trim();
 
@@ -106,7 +143,6 @@ public static class SuspiciousLocationRules
             if (space > 0) value = value[..space];
         }
 
-        var slash = value.LastIndexOfAny(new[] { '\\', '/' });
-        return slash >= 0 && slash < value.Length - 1 ? value[(slash + 1)..] : value;
+        return value;
     }
 }

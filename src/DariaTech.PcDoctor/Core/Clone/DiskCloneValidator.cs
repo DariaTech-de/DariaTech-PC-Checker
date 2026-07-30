@@ -32,8 +32,10 @@ public static class DiskCloneValidator
             if (source.Number == target.Number)
                 errors.Add("Quelle und Ziel sind dasselbe Laufwerk.");
 
+            // Fail-safe: „geschützt" umfasst auch den Fall, dass sich der Status
+            // nicht ermitteln ließ. Lieber verweigern als die Kundenplatte löschen.
             if (target.IsProtected)
-                errors.Add($"Ziel „{target.Name}“ ist die System-/Startplatte – Klonen darauf ist gesperrt.");
+                errors.Add($"Ziel „{target.Name}“ {target.ProtectionReason} – Klonen darauf ist gesperrt.");
 
             if (target.SizeBytes < source.SizeBytes)
                 errors.Add($"Ziel ({target.SizeText}) ist kleiner als die Quelle ({source.SizeText}).");

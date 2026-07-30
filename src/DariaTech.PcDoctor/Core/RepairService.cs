@@ -23,10 +23,18 @@ public sealed class RepairService
         _log = log;
     }
 
+    /// <param name="confirmWithoutRestorePoint">
+    /// Wird gefragt, wenn die Aktion einen Wiederherstellungspunkt verlangt, dieser
+    /// aber nicht angelegt werden konnte. Liefert die Rückfrage <c>false</c> – oder
+    /// ist keine hinterlegt –, wird die Reparatur NICHT ausgeführt. Ohne
+    /// Rückfallebene wird nichts am System verändert, ohne dass der Techniker das
+    /// ausdrücklich entschieden hat.
+    /// </param>
     public async Task<FixOutcome> RunAsync(
         IFixAction fix,
         IProgress<string> progress,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        Func<string, bool>? confirmWithoutRestorePoint = null)
     {
         _log.LogInformation("Starte Reparatur: {Title}", fix.Title);
         progress.Report($"Starte: {fix.Title}");
@@ -40,9 +48,32 @@ public sealed class RepairService
 
             progress.Report(rp.Message);
             if (rp.Success)
+            {
                 _log.LogInformation("Wiederherstellungspunkt angelegt für {Title}", fix.Title);
+            }
             else
+            {
                 _log.LogWarning("Kein Wiederherstellungspunkt für {Title}: {Msg}", fix.Title, rp.Message);
+
+                // Die Reparatur wurde mit der Zusage bestätigt, dass vorher ein
+                // Wiederherstellungspunkt angelegt wird. Klappt das nicht, darf sie
+                // nicht stillschweigend trotzdem laufen – sonst gibt es keinen Weg
+                // zurück, wenn der Eingriff schiefgeht.
+                var proceed = confirmWithoutRestorePoint?.Invoke(rp.Message) ?? false;
+                if (!proceed)
+                {
+                    const string aborted =
+                        "Abgebrochen: Es konnte kein Systemwiederherstellungspunkt angelegt werden. " +
+                        "Am System wurde nichts verändert. Zuerst „Systemwiederherstellung einschalten“ " +
+                        "ausführen – danach ist diese Reparatur abgesichert.";
+                    _log.LogWarning("Reparatur ohne Wiederherstellungspunkt abgelehnt: {Title}", fix.Title);
+                    progress.Report(aborted);
+                    return new FixOutcome(false, aborted);
+                }
+
+                _log.LogWarning("Reparatur läuft OHNE Wiederherstellungspunkt (bestätigt): {Title}", fix.Title);
+                progress.Report("Fortsetzung ohne Wiederherstellungspunkt – ausdrücklich bestätigt.");
+            }
         }
 
         try

@@ -152,6 +152,18 @@ public sealed partial class SymptomViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Rückfrage, wenn kein Wiederherstellungspunkt angelegt werden konnte –
+    /// gleiche Regel wie im Dashboard: ohne ausdrückliche Freigabe wird nichts
+    /// verändert.
+    /// </summary>
+    private bool AskProceedWithoutRestorePoint(string reason)
+        => _dialogs.Confirm("Kein Wiederherstellungspunkt möglich",
+            $"{reason}\n\n" +
+            "Damit gibt es KEINE Rückfallebene, falls die Reparatur Probleme macht.\n\n" +
+            "Empfehlung: abbrechen und zuerst „Systemwiederherstellung einschalten“ ausführen.\n\n" +
+            "Trotzdem ohne Wiederherstellungspunkt fortfahren?");
+
     /// <summary>Führt eine empfohlene Reparatur aus (mit Bestätigung, wie im Dashboard).</summary>
     [RelayCommand(CanExecute = nameof(CanRunFix))]
     private async Task RunFixAsync(IFixAction? fix)
@@ -173,7 +185,9 @@ public sealed partial class SymptomViewModel : ObservableObject
         FixOutcome outcome;
         try
         {
-            outcome = await _repairService.RunAsync(fix, progress, _cts.Token).ConfigureAwait(true);
+            outcome = await _repairService
+                .RunAsync(fix, progress, _cts.Token, AskProceedWithoutRestorePoint)
+                .ConfigureAwait(true);
         }
         catch (Exception ex)
         {

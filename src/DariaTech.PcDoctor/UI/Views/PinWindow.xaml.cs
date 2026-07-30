@@ -39,6 +39,21 @@ public partial class PinWindow : FluentWindow
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        // Das ViewModel leert den PIN nach jedem Versuch. Eine PasswordBox lässt
+        // sich nicht binden – ohne dieses Nachziehen bliebe die Fehleingabe im
+        // Feld stehen und würde der nächsten Eingabe vorangestellt. Der zweite
+        // Versuch wäre dann zwangsläufig ebenfalls falsch und die Sperre
+        // schnappt zu, obwohl der PIN richtig getippt wurde.
+        if (e.PropertyName == nameof(PinViewModel.Pin))
+        {
+            if (_viewModel.Pin.Length == 0 && PinBox.Password.Length > 0)
+            {
+                PinBox.Clear();
+                PinBox.Focus();
+            }
+            return;
+        }
+
         if (e.PropertyName != nameof(PinViewModel.IsAuthenticated)) return;
         if (!_viewModel.IsAuthenticated) return;
 
@@ -54,7 +69,4 @@ public partial class PinWindow : FluentWindow
     {
         if (sender is System.Windows.Controls.PasswordBox box) _viewModel.Pin = box.Password;
     }
-
-    /// <summary>Leert das Eingabefeld (nach Fehlversuch bzw. erneuter Sperre).</summary>
-    public void ClearInput() => PinBox.Clear();
 }

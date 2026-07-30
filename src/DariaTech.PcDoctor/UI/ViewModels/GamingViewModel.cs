@@ -105,6 +105,38 @@ public sealed partial class GamingViewModel : ObservableObject
         _timer.Start();
     }
 
+    /// <summary>
+    /// True, wenn dieses System überhaupt eine CPU- oder GPU-Temperatur liefert.
+    /// Nur dann kann die Notabschaltung des Stresstests greifen. Läuft die
+    /// Überwachung bereits, wird der bekannte Zustand genutzt; sonst wird einmal
+    /// mit Zeitlimit nachgesehen (ein hängender Sensortreiber darf hier nicht
+    /// blockieren).
+    /// </summary>
+    private async Task<bool> HasTemperatureSourceAsync()
+    {
+        if (IsMonitoring) return HasCpuTemp || HasGpuTemp;
+
+        try
+        {
+            var read = Task.Run(() =>
+            {
+                try { return _sensors.Read(); }
+                catch { return (IReadOnlyList<SensorReading>)Array.Empty<SensorReading>(); }
+            });
+
+            if (await Task.WhenAny(read, Task.Delay(TimeSpan.FromSeconds(8))).ConfigureAwait(true) != read)
+                return false;   // Sensorik antwortet nicht -> keine Absicherung
+
+            var readings = await read.ConfigureAwait(true);
+            return readings.Any(r => r.Kind == SensorKind.Temperature
+                                     && (IsCpu(r) || IsGpu(r)));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private void StopMonitoring()
     {
         _timer.Stop();
@@ -116,11 +148,25 @@ public sealed partial class GamingViewModel : ObservableObject
     private async Task StartStressAsync()
     {
         var minutes = Math.Clamp(StressDurationMinutes, 0.5, 60);
+
+        // Die Notabschaltung kann nur greifen, wenn überhaupt eine Temperatur
+        // gelesen werden kann. Fehlt sie, darf das nicht als „automatisch
+        // abgesichert" verkauft werden – genau dann läuft die volle Last nämlich
+        // ohne jedes Netz.
+        var safetyWorks = await HasTemperatureSourceAsync().ConfigureAwait(true);
+        var safetyText = safetyWorks
+            ? "Sicherheit: Der Test stoppt automatisch, sobald CPU/GPU eine kritische Temperatur " +
+              "erreichen, und kann jederzeit über „Stoppen“ abgebrochen werden."
+            : "ACHTUNG – KEINE automatische Notabschaltung möglich: Dieses System liefert keine " +
+              "Temperaturwerte (Sensortreiber blockiert oder nicht unterstützt). Der Test läuft " +
+              "dann ohne Temperaturüberwachung. Bitte Lüfter/Kühler vorher prüfen, den PC während " +
+              "des Tests nicht unbeaufsichtigt lassen und bei ungewöhnlichem Verhalten sofort " +
+              "„Stoppen“ drücken.";
+
         var confirmed = _dialogs.Confirm("Stresstest starten",
             $"Der Stresstest belastet CPU, Arbeitsspeicher und – sofern vorhanden – die Grafikkarte (GPU) " +
             $"für {minutes:0.#} Minuten voll aus – der PC wird dabei deutlich wärmer und lauter.\n\n" +
-            "Sicherheit: Der Test stoppt automatisch, sobald CPU/GPU eine kritische Temperatur " +
-            "erreichen, und kann jederzeit über „Stoppen“ abgebrochen werden.\n\n" +
+            $"{safetyText}\n\n" +
             "Vor dem Test bitte sicherstellen, dass die Lüftung frei ist. Fortfahren?");
         if (!confirmed) return;
 

@@ -1,4 +1,5 @@
 using DariaTech.PcDoctor.Core.Clone;
+using DariaTech.PcDoctor.Infrastructure;
 using DariaTech.PcDoctor.Models;
 using Xunit;
 
@@ -51,6 +52,56 @@ public class DiskCloneTests
         Assert.True(v.CanClone);
         Assert.Contains(v.Warnings, w => w.Contains("ddrescue"));
     }
+
+    /// <summary>
+    /// Der wichtigste Test des ganzen Klon-Moduls: Lässt sich der Schutzstatus
+    /// nicht ermitteln (WMI liefert IsSystem/IsBoot nicht), darf die Platte NIE
+    /// als Ziel akzeptiert werden. Ein „unbekannt" als „nicht geschützt" zu
+    /// behandeln würde bedeuten, die Systemplatte des Kunden zu überschreiben.
+    /// </summary>
+    [Fact]
+    public void Validate_TargetProtectionUnknown_Blocked()
+    {
+        var target = new PhysicalDisk(0, "Disk0", "SN0", 1000 * Gb, "NVMe",
+            IsSystem: false, IsBoot: false, Health: "Healthy", ProtectionUnknown: true);
+
+        var v = DiskCloneValidator.Validate(Disk(1, 500), target);
+
+        Assert.False(v.CanClone);
+        Assert.Contains(v.Errors, e => e.Contains("nicht ermittelbar"));
+        Assert.True(target.IsProtected);
+    }
+
+    [Fact]
+    public void Validate_TargetHoldsWindows_Blocked()
+    {
+        // Zweite, unabhängige Quelle: Windows liegt auf dieser Platte.
+        var target = new PhysicalDisk(2, "Disk2", "SN2", 1000 * Gb, "SATA",
+            IsSystem: false, IsBoot: false, Health: "Healthy", HoldsWindows: true);
+
+        var v = DiskCloneValidator.Validate(Disk(1, 500), target);
+
+        Assert.False(v.CanClone);
+        Assert.Contains(v.Errors, e => e.Contains("Windows"));
+    }
+
+    [Fact]
+    public void UnprotectedDisk_HasNoProtectionReason()
+    {
+        var disk = Disk(3, 500);
+        Assert.False(disk.IsProtected);
+        Assert.Null(disk.ProtectionReason);
+    }
+
+    [Theory]
+    [InlineData(@"C:\Windows", 'C')]
+    [InlineData(@"D:\Windows", 'D')]
+    [InlineData(@"c:\windows", 'C')]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    [InlineData(@"\\server\share\Windows", null)]
+    public void WindowsDriveLetter_ReadsTheDriveOrNothing(string? path, char? expected)
+        => Assert.Equal(expected, WmiPhysicalDiskService.WindowsDriveLetter(path));
 
     [Fact]
     public void BuildArgs_PutsSourceBeforeTarget()

@@ -47,7 +47,14 @@ public sealed class DisableStartupItemFix : IFixAction
             try
             {
                 if (TryParseRegistry(_location, out var hive, out var subPath))
+                {
+                    if (!IsAllowedRunKey(subPath))
+                        return new FixOutcome(false,
+                            $"„{_name}“ liegt nicht in einem Autostart-Schlüssel ({_location}). " +
+                            "Aus Sicherheitsgründen wird dort nichts verändert.");
+
                     return DisableRegistryValue(hive, subPath, progress);
+                }
 
                 return DisableStartupFolderEntry(progress);
             }
@@ -72,7 +79,13 @@ public sealed class DisableStartupItemFix : IFixAction
 
         using (var backup = runKey.CreateSubKey(RegistryBackupKey, writable: true))
         {
-            backup!.SetValue(_name, value, kind);
+            // Bestehende Sicherung nicht überschreiben (sonst ist der frühere
+            // Wert verloren und die Aktion nicht mehr umkehrbar).
+            var backupName = _name;
+            if (backup!.GetValue(backupName) is not null)
+                backupName = $"{_name}_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+            backup.SetValue(backupName, value, kind);
         }
         runKey.DeleteValue(_name);
 
@@ -93,10 +106,16 @@ public sealed class DisableStartupItemFix : IFixAction
 
         var backupDir = Path.Combine(folder, FolderBackupName);
         Directory.CreateDirectory(backupDir);
+
+        // Eine bereits gesicherte Datei NICHT überschreiben – sonst wäre die
+        // vorherige Sicherung weg und „reversibel" gälte nicht mehr.
         var target = Path.Combine(backupDir, Path.GetFileName(link));
+        if (File.Exists(target))
+            target = Path.Combine(backupDir,
+                $"{Path.GetFileNameWithoutExtension(link)}_{DateTime.Now:yyyyMMdd_HHmmss}" +
+                Path.GetExtension(link));
 
         progress.Report($"Verschiebe „{Path.GetFileName(link)}“ nach „{FolderBackupName}“ …");
-        if (File.Exists(target)) File.Delete(target);
         File.Move(link, target);
 
         return new FixOutcome(true, $"Autostart „{_name}“ deaktiviert (in „{FolderBackupName}“ verschoben).");
@@ -139,6 +158,28 @@ public sealed class DisableStartupItemFix : IFixAction
         catch { /* ignoriert */ }
 
         return null;
+    }
+
+    /// <summary>
+    /// Nur echte Autostart-Schlüssel dürfen verändert werden. Diese Schranke ist
+    /// Absicht: Der Pfad kommt aus <c>Win32_StartupCommand</c>, also von außen.
+    /// Ohne Prüfung würde die Aktion aus einem beliebigen Registry-Schlüssel
+    /// einen Wert löschen, falls dort einmal etwas Unerwartetes steht.
+    /// Öffentlich, damit die Regel testbar ist.
+    /// </summary>
+    public static bool IsAllowedRunKey(string? subPath)
+    {
+        if (string.IsNullOrWhiteSpace(subPath)) return false;
+
+        var path = subPath.Replace('/', '\\').Trim().TrimEnd('\\');
+
+        // Erlaubt sind Run, RunOnce, RunServices und RunServicesOnce – jeweils als
+        // LETZTER Pfadteil, damit „…\Run\Irgendwas" nicht durchrutscht.
+        var last = path[(path.LastIndexOf('\\') + 1)..];
+        return last.Equals("Run", StringComparison.OrdinalIgnoreCase)
+            || last.Equals("RunOnce", StringComparison.OrdinalIgnoreCase)
+            || last.Equals("RunServices", StringComparison.OrdinalIgnoreCase)
+            || last.Equals("RunServicesOnce", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryParseRegistry(string location, out RegistryKey hive, out string subPath)
